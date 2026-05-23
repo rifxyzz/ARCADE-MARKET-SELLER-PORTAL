@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Seller Portal | Arcade Market</title>
+<link rel="icon" href="https://arcade-markets.vercel.app/favicon.ico" type="image/x-icon" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet" />
+<script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+<link rel="stylesheet" href="seller-dashboard.css" />
+</head>
+<body>
+
+<!-- Star particles (matches main site) -->
+<div id="stars"></div>
+<div id="stars2"></div>
+<div id="stars3"></div>
+
+<!-- ══════════════════════════════════════════
+     GATE SCREEN
+     ══════════════════════════════════════════ -->
+<div id="gate-screen">
+  <div class="gate-glow"></div>
+  <div class="gate-card">
+    <div class="gate-logo-wrap">
+      <div class="gate-logo-icon">AM</div>
+      <div class="gate-logo-text">
+        <div class="gate-logo-name">ARCADE MARKET</div>
+        <div class="gate-logo-sub">Arc Testnet · Circle</div>
+      </div>
+    </div>
+
+    <div class="gate-title">Seller Portal<br><span>Exclusive Access</span></div>
+    <div class="gate-sub">Connect your wallet to verify Genesis NFT ownership and access your seller dashboard on Arc Testnet.</div>
+
+    <div class="gate-requirement">
+      <div class="gate-req-icon">🃏</div>
+      <div>
+        <div class="gate-req-title">Genesis NFT Required</div>
+        <div class="gate-req-desc">Hold ≥ 1 ARCM Genesis NFT to unlock seller access · USDC payments on Arc Testnet</div>
+      </div>
+    </div>
+
+    <button class="gate-connect-btn" id="gate-btn" onclick="connectWallet()">
+      <span id="gate-btn-text">Connect Wallet</span>
+    </button>
+    <div class="gate-status" id="gate-status"></div>
+
+    <div class="gate-footer">
+      Don't have a Genesis NFT? <a href="https://arcade-markets.vercel.app/mint" target="_blank">Mint ARCM Early Genesis ↗</a><br>
+      <a href="https://arcade-markets.vercel.app" target="_blank">arcade-markets.vercel.app ↗</a>
+      &nbsp;·&nbsp;
+      <a href="https://faucet.circle.com" target="_blank">Get test USDC ↗</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
+     SIDEBAR
+     ══════════════════════════════════════════ -->
+<aside class="sidebar">
+  <a href="https://arcade-markets.vercel.app" target="_blank" class="sidebar-logo">
+    <div class="logo-icon">AM</div>
+    <div>
+      <div class="logo-name">ARCADE</div>
+      <div class="logo-sub">Seller Portal</div>
+    </div>
+  </a>
+
+  <nav class="nav">
+    <div class="nav-section">Overview</div>
+    <div class="nav-item active" onclick="showTab('dashboard')">
+      <span class="nav-icon">◈</span> Dashboard
+    </div>
+    <div class="nav-item" onclick="showTab('analytics')">
+      <span class="nav-icon">◉</span> Analytics
+    </div>
+
+    <div class="nav-section">Store</div>
+    <div class="nav-item" onclick="showTab('products')">
+      <span class="nav-icon">◆</span> Products
+      <span class="nav-badge" id="badge-products">0</span>
+    </div>
+    <div class="nav-item" onclick="showTab('orders')">
+      <span class="nav-icon">⬡</span> Orders
+      <span class="nav-badge red" id="badge-orders">0</span>
+    </div>
+    <div class="nav-item" onclick="showTab('addproduct')">
+      <span class="nav-icon">✦</span> List Product
+    </div>
+
+    <div class="nav-section">Account</div>
+    <div class="nav-item" onclick="showTab('settings')">
+      <span class="nav-icon">◎</span> Settings
+    </div>
+    <a href="https://arcade-markets.vercel.app/market" target="_blank" class="nav-item">
+      <span class="nav-icon">⬖</span> Browse Market
+    </a>
+    <a href="https://arcade-markets.vercel.app/mint" target="_blank" class="nav-item">
+      <span class="nav-icon">🃏</span> Mint Genesis
+      <span class="nav-badge copper">!</span>
+    </a>
+    <a href="https://testnet.arcscan.app" target="_blank" class="nav-item">
+      <span class="nav-icon">↗</span> Arc Explorer
+    </a>
+  </nav>
+
+  <!-- NFT Status -->
+  <div class="nft-status" id="sidebar-nft-status">
+    <div class="nft-badge-row">
+      <div class="pulse-dot"></div>
+      <div class="nft-label" id="nft-label-text">GENESIS HOLDER</div>
+    </div>
+    <div class="nft-card-name" id="nft-card-name">Verifying...</div>
+    <div class="nft-card-tier" id="nft-tier-text">Loading tier...</div>
+  </div>
+</aside>
+
+<!-- ══════════════════════════════════════════
+     TOPBAR
+     ══════════════════════════════════════════ -->
+<header class="topbar">
+  <div class="topbar-title" id="page-title-text">Dashboard</div>
+
+  <div class="network-pill" id="network-pill">
+    <div class="net-dot" id="net-dot"></div>
+    <span id="network-name">Detecting...</span>
+  </div>
+
+  <a href="https://faucet.circle.com" target="_blank" class="topbar-btn">
+    Get test USDC
+  </a>
+
+  <button class="wallet-btn" id="topbar-wallet-btn" onclick="disconnectWallet()">
+    <canvas class="wallet-avatar" id="wallet-avatar" width="22" height="22"></canvas>
+    <span id="topbar-wallet-addr">Not Connected</span>
+  </button>
+</header>
+
+<!-- ══════════════════════════════════════════
+     MAIN CONTENT
+     ══════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- ── DASHBOARD TAB ── -->
+  <section class="content active" id="tab-dashboard">
+    <div class="page-header">
+      <div class="page-title">Overview</div>
+      <div class="page-sub">Your store performance on Arc Testnet · USDC settlements</div>
+    </div>
+
+    <!-- Contract setup banner (shown if no contract configured) -->
+    <div class="contract-setup" id="contract-setup-banner" style="display:none">
+      <div class="contract-setup-title">⬡ Connect Your ArcadeMarket Contract</div>
+      <div class="contract-setup-desc">
+        Deploy <code style="color:var(--copper3);font-family:'DM Mono',monospace">ArcadeMarket.sol</code> on Arc Testnet, then paste your contract address below to enable on-chain listing. Products you list will appear on <a href="https://arcade-markets.vercel.app/market" target="_blank" style="color:var(--copper3)">arcade-markets.vercel.app/market</a>.
+      </div>
+      <div class="contract-input-row">
+        <input class="form-input" id="contract-addr-input" type="text" placeholder="0x... your deployed ArcadeMarket contract address" />
+        <button class="btn btn-primary btn-sm" onclick="saveContractAddress()">Save</button>
+      </div>
+    </div>
+
+    <!-- Genesis banner -->
+    <div class="info-banner">
+      <div class="info-banner-icon">🃏</div>
+      <div class="info-banner-text">
+        <div class="info-banner-title">Early Genesis Seller</div>
+        <div class="info-banner-desc">Only 1,000 Genesis NFTs available. Your ARCM NFT unlocks seller privileges — list products directly on Arcade Market.</div>
+      </div>
+      <a href="https://arcade-markets.vercel.app/mint" target="_blank" class="banner-btn copper-btn">Mint ARCM ↗</a>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid">
+      <div class="stat-card navy">
+        <div class="stat-icon">💰</div>
+        <div class="stat-label">Total Revenue</div>
+        <div class="stat-value" id="stat-revenue">0.00 <span>USDC</span></div>
+        <div class="stat-delta" id="stat-revenue-delta">Arc Testnet</div>
+      </div>
+      <div class="stat-card copper">
+        <div class="stat-icon">📦</div>
+        <div class="stat-label">Total Orders</div>
+        <div class="stat-value" id="stat-orders">0</div>
+        <div class="stat-delta" id="stat-orders-delta">on-chain</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-icon">🏪</div>
+        <div class="stat-label">Active Listings</div>
+        <div class="stat-value" id="stat-listings">0</div>
+        <div class="stat-delta up" id="stat-listings-delta">live on market</div>
+      </div>
+      <div class="stat-card gold">
+        <div class="stat-icon">🃏</div>
+        <div class="stat-label">Genesis NFT</div>
+        <div class="stat-value" id="stat-nft">0</div>
+        <div class="stat-delta">ARCM held</div>
+      </div>
+    </div>
+
+    <!-- Chart + Recent Orders -->
+    <div class="two-col">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Revenue — Last 7 Days</div>
+          <button class="card-action" onclick="refreshDashboard()">↻ Refresh</button>
+        </div>
+        <div class="chart-wrap">
+          <div class="chart-total" id="chart-total">0.00 <span style="font-size:14px;color:var(--text2);font-weight:400">USDC</span></div>
+          <div class="chart-sub" style="margin-bottom:16px">Cumulative this week</div>
+          <div class="chart-bars" id="chart-bars">
+            <div class="bar-col"><div class="bar" style="height:4px"></div><div class="bar-label">S</div></div>
+            <div class="bar-col"><div class="bar" style="height:4px"></div><div class="bar-label">M</div></div>
+            <div class="bar-col"><div class="bar" style="height:4px"></div><div class="bar-label">T</div></div>
+            <div class="bar-col"><div class="bar" style="height:4px"></div><div class="bar-label">W</div></div>
+            <div class="bar-col"><div class="bar" style="height:4px"></div><div class="bar-label">T</div></div>
+            <div class="bar-col"><div class="bar" style="height:4px"></div><div class="bar-label">F</div></div>
+            <div class="bar-col"><div class="bar" style="height:4px"></div><div class="bar-label">S</div></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px;padding-top:12px;border-top:1px solid var(--border)">
+            <span style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">Settled in USDC · Arc Testnet</span>
+            <a href="https://testnet.arcscan.app" target="_blank" id="explorer-link" style="font-size:11px;color:var(--copper3);text-decoration:none;font-family:'DM Mono',monospace">View on Explorer ↗</a>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recent Orders</div>
+          <button class="card-action" onclick="showTab('orders')">View all</button>
+        </div>
+        <div id="recent-orders-body">
+          <div class="empty">
+            <div class="empty-icon">📦</div>
+            <div class="empty-text">No orders yet. List a product to get started.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ANALYTICS TAB ── -->
+  <section class="content" id="tab-analytics">
+    <div class="page-header">
+      <div class="page-title">Analytics</div>
+      <div class="page-sub">Performance metrics for your store on Arc Testnet.</div>
+    </div>
+    <div class="analytics-grid">
+      <div class="stat-card navy">
+        <div class="stat-label">Avg. Order Value</div>
+        <div class="stat-value" id="ana-avg">0.00 <span>USDC</span></div>
+        <div class="stat-delta">on-chain data</div>
+      </div>
+      <div class="stat-card copper">
+        <div class="stat-label">Active Products</div>
+        <div class="stat-value" id="ana-products">0</div>
+        <div class="stat-delta">live listings</div>
+      </div>
+      <div class="stat-card green">
+        <div class="stat-label">Seller Tier</div>
+        <div class="stat-value" id="ana-tier" style="font-size:16px">—</div>
+        <div class="stat-delta">access level</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Sales by Product</div>
+        <button class="card-action" onclick="loadOnChainProducts()">↻ Sync from chain</button>
+      </div>
+      <div id="analytics-table-wrap">
+        <div class="empty"><div class="empty-icon">◈</div><div class="empty-text">No sales data yet.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── PRODUCTS TAB ── -->
+  <section class="content" id="tab-products">
+    <div class="page-header" style="display:flex;align-items:center">
+      <div style="flex:1">
+        <div class="page-title">Products</div>
+        <div class="page-sub">Your on-chain listings on Arcade Market.</div>
+      </div>
+      <button class="btn btn-primary" onclick="showTab('addproduct')">+ List Product</button>
+    </div>
+    <div class="card" style="position:relative">
+      <div class="loading-overlay hidden" id="products-loading"><div class="loading-spinner"></div></div>
+      <div id="products-list">
+        <div class="empty">
+          <div class="empty-icon">◉</div>
+          <div class="empty-text">No products listed yet.</div>
+          <a class="empty-cta" onclick="showTab('addproduct')">✦ List your first product</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ORDERS TAB ── -->
+  <section class="content" id="tab-orders">
+    <div class="page-header">
+      <div class="page-title">Orders</div>
+      <div class="page-sub">All transactions settled via USDC on Arc Testnet.</div>
+    </div>
+    <div class="card">
+      <div id="orders-table-wrap">
+        <div class="empty"><div class="empty-icon">◆</div><div class="empty-text">No orders yet.</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── ADD PRODUCT TAB ── -->
+  <section class="content" id="tab-addproduct">
+    <div class="page-header">
+      <div class="page-title">List Product</div>
+      <div class="page-sub">List a new item on Arcade Market — stored on-chain on Arc Testnet.</div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:16px">
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><div class="card-title">Product Details</div></div>
+          <div style="padding:20px">
+            <div class="form-grid">
+              <div class="form-group form-full">
+                <label class="form-label">Product Name *</label>
+                <input class="form-input" id="prod-name" type="text" placeholder="e.g. Neon Sword, Cyber Cape, Arcade Pass…" />
+              </div>
+              <div class="form-group form-full">
+                <label class="form-label">Description *</label>
+                <textarea class="form-textarea" id="prod-desc" placeholder="Describe your product…"></textarea>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Price (USDC) *</label>
+                <input class="form-input" id="prod-price" type="number" step="0.01" min="0.01" placeholder="0.00" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Stock Quantity *</label>
+                <input class="form-input" id="prod-stock" type="number" min="1" placeholder="1" />
+              </div>
+              <div class="form-group form-full">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="prod-category">
+                  <option>Collectibles</option>
+                  <option>Game Items</option>
+                  <option>Apparel</option>
+                  <option>Access Pass</option>
+                  <option>Digital Art</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header"><div class="card-title">Product Image</div></div>
+          <div style="padding:20px">
+            <div class="upload-zone" id="upload-zone">
+              <input type="file" id="prod-image" accept="image/*" onchange="previewImage(event)" />
+              <div class="upload-icon">🖼</div>
+              <div class="upload-text">Drag & drop or click to upload</div>
+              <div class="upload-sub">PNG · JPG · GIF · Max 5MB</div>
+              <img id="upload-preview" src="" alt="preview" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <!-- Seller Verification -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><div class="card-title">Seller Verification</div></div>
+          <div style="padding:16px">
+            <div style="display:flex;align-items:center;gap:10px;padding:12px;background:rgba(48,224,0,0.05);border:1px solid rgba(48,224,0,0.15);border-radius:10px;margin-bottom:14px">
+              <span style="font-size:18px">✅</span>
+              <div>
+                <div style="font-size:12px;font-weight:600;color:var(--green)">Genesis Verified</div>
+                <div style="font-size:11px;color:var(--text2);font-family:'DM Mono',monospace" id="verify-nft-info">Loading...</div>
+              </div>
+            </div>
+            <div style="font-size:12px;color:var(--text2);line-height:1.6">Your Genesis NFT grants seller access. Listings go live on Arcade Market instantly.</div>
+          </div>
+        </div>
+
+        <!-- Payment Wallet -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><div class="card-title">Payment Wallet</div></div>
+          <div style="padding:16px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-family:'DM Mono',monospace">USDC revenue sent to:</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--copper3);background:rgba(255,255,255,0.04);padding:10px 12px;border-radius:8px;border:1px solid var(--border);word-break:break-all" id="payment-wallet-addr">Not connected</div>
+            <div style="font-size:11px;color:var(--text3);margin-top:8px">⚡ Instant USDC settlement · Arc Testnet</div>
+          </div>
+        </div>
+
+        <!-- Contract Address -->
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-header"><div class="card-title">Contract</div></div>
+          <div style="padding:16px">
+            <div style="font-size:11px;color:var(--text3);margin-bottom:8px;font-family:'DM Mono',monospace">ArcadeMarket contract:</div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--navy3);background:rgba(255,255,255,0.04);padding:10px 12px;border-radius:8px;border:1px solid var(--border);word-break:break-all" id="contract-addr-display-small">Not configured</div>
+            <button class="btn btn-outline btn-sm" style="margin-top:10px;width:100%;justify-content:center" onclick="showTab('settings')">Configure Contract ↗</button>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <button class="btn btn-primary" style="justify-content:center;border-radius:50px;padding:13px 20px" id="list-btn" onclick="listProductOnChain()">
+            List on Arcade Market
+          </button>
+          <div id="list-tx-status" style="font-size:11px;font-family:'DM Mono',monospace;color:var(--text3);text-align:center;min-height:16px"></div>
+          <button class="btn btn-outline" style="justify-content:center" onclick="saveDraft()">Save Draft</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── SETTINGS TAB ── -->
+  <section class="content" id="tab-settings">
+    <div class="page-header">
+      <div class="page-title">Settings</div>
+      <div class="page-sub">Manage your store, wallet, and contract configuration.</div>
+    </div>
+
+    <div class="card" style="margin-bottom:16px">
+      <!-- Store Info -->
+      <div class="settings-section">
+        <div class="settings-title">Store Info</div>
+        <div class="settings-desc">Your public storefront details on Arcade Market.</div>
+        <div class="form-grid">
+          <div class="form-group"><label class="form-label">Store Name</label><input class="form-input" id="store-name" value="My Arcade Store" /></div>
+          <div class="form-group"><label class="form-label">Handle</label><input class="form-input" id="store-handle" value="@arcade_seller" /></div>
+          <div class="form-group form-full"><label class="form-label">Bio</label><textarea class="form-textarea" id="store-bio" style="min-height:60px">Selling rare digital collectibles on Arc Testnet.</textarea></div>
+        </div>
+        <div style="margin-top:14px"><button class="btn btn-primary" onclick="saveStoreSettings()">Save Changes</button></div>
+      </div>
+
+      <!-- Connected Wallet -->
+      <div class="settings-section">
+        <div class="settings-title">Connected Wallet</div>
+        <div class="settings-desc">Your wallet receives all USDC payments directly on Arc Testnet.</div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--copper3);background:rgba(255,255,255,0.04);padding:10px 14px;border-radius:10px;border:1px solid var(--border);flex:1;word-break:break-all" id="settings-wallet-addr">Not connected</div>
+          <button class="btn btn-outline btn-sm" onclick="disconnectWallet()">Disconnect</button>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--text2)">
+          Genesis NFT Balance: <span style="color:var(--copper3);font-family:'DM Mono',monospace" id="settings-nft-balance">0</span> ARCM
+        </div>
+      </div>
+
+      <!-- Contract Address -->
+      <div class="settings-section">
+        <div class="settings-title">ArcadeMarket Contract</div>
+        <div class="settings-desc">
+          Deploy <code style="color:var(--copper3);font-family:'DM Mono',monospace;font-size:11px">ArcadeMarket.sol</code> on Arc Testnet, then paste the address here. Your products will appear on <a href="https://arcade-markets.vercel.app/market" target="_blank" style="color:var(--copper3)">arcade-markets.vercel.app/market</a>.
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;margin-bottom:10px">
+          <input class="form-input" id="settings-contract-input" type="text" placeholder="0x... deployed ArcadeMarket contract on Arc Testnet" style="font-family:'DM Mono',monospace;font-size:12px" />
+          <button class="btn btn-primary btn-sm" onclick="saveContractAddress()">Save</button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);font-family:'DM Mono',monospace">
+          Network: <span id="settings-network" style="color:var(--text2)">—</span>
+          &nbsp;·&nbsp;
+          Chain ID: <span id="settings-chainid" style="color:var(--text2)">—</span>
+        </div>
+        <div style="margin-top:8px;font-family:'DM Mono',monospace;font-size:11px;color:var(--navy3);word-break:break-all" id="contract-addr-display">No contract configured</div>
+      </div>
+
+      <!-- Genesis NFT Tier -->
+      <div class="settings-section">
+        <div class="settings-title">Genesis NFT Tier</div>
+        <div class="settings-desc">Your tier determines seller benefits on Arcade Market.</div>
+        <div class="tier-grid">
+          <div class="tier-card" id="tier-common">
+            <div class="tier-emoji">⬜</div>
+            <div class="tier-name">COMMON</div>
+            <div class="tier-perk">List up to <strong>5</strong> items</div>
+          </div>
+          <div class="tier-card" id="tier-rare">
+            <div class="tier-emoji">🟦</div>
+            <div class="tier-name">RARE</div>
+            <div class="tier-perk">List up to <strong>20</strong> items</div>
+          </div>
+          <div class="tier-card" id="tier-epic">
+            <div class="tier-emoji">🟣</div>
+            <div class="tier-name">EPIC</div>
+            <div class="tier-perk">List up to <strong>50</strong> items</div>
+          </div>
+          <div class="tier-card" id="tier-legendary">
+            <div class="tier-emoji">🟡</div>
+            <div class="tier-name">LEGENDARY</div>
+            <div class="tier-perk"><strong>Unlimited</strong> listings</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <a href="https://arcade-markets.vercel.app" target="_blank" class="btn btn-outline">⬡ Go to Marketplace</a>
+      <a href="https://arcade-markets.vercel.app/mint" target="_blank" class="btn btn-outline">🃏 Mint Genesis</a>
+      <a href="https://testnet.arcscan.app" target="_blank" id="explorer-btn" class="btn btn-outline">↗ Arc Explorer</a>
+      <a href="https://faucet.circle.com" target="_blank" class="btn btn-outline">🪙 Get test USDC</a>
+    </div>
+  </section>
+
+</main>
+
+<!-- TOAST -->
+<div class="toast" id="toast">
+  <span class="toast-icon" id="toast-icon">✓</span>
+  <span id="toast-msg">Done!</span>
+</div>
+
+<!-- TX MODAL -->
+<div class="modal-overlay" id="tx-modal">
+  <div class="modal">
+    <div class="modal-icon" id="modal-icon">⬡</div>
+    <div class="modal-title" id="modal-title">Transaction Submitted</div>
+    <div class="modal-desc" id="modal-desc">Your product is being listed on Arcade Market.</div>
+    <div class="modal-hash" id="modal-hash"></div>
+    <button class="modal-close" onclick="closeTxModal()">CLOSE</button>
+  </div>
+</div>
+
+<script src="seller-dashboard.js"></script>
+</body>
+</html>
