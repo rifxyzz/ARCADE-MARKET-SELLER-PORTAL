@@ -25,7 +25,7 @@ cp .env.example .env
 Edit `.env` and fill at least:
 
 ```bash
-PRIVATE_KEY=0xyour_private_key_here
+PRIVATE_KEY=0xf9f6d852945bfbcb4beb01d0407da788f1a726091b517f1d30f2309c2cc5fd44
 ARC_TESTNET_RPC_URL=https://rpc.testnet.arc.network
 ```
 
