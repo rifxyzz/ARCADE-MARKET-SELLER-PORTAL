@@ -52,7 +52,7 @@ export default function AddProductTab({ pf, setPf, listLoad, listTx, listProduct
                 <input type="file" accept="image/*" onChange={onImg} />
                 <div className="upload-icon">🖼</div>
                 <div className="upload-text">Drag &amp; drop or click to upload</div>
-                <div className="upload-sub">PNG · JPG · GIF · Max 5MB</div>
+                <div className="upload-sub">PNG · JPG · GIF · Max 5MB · compressed for on-chain gas</div>
                 {pf.imgPrev && (
                   <Image
                     src={pf.imgPrev}
@@ -112,7 +112,7 @@ export default function AddProductTab({ pf, setPf, listLoad, listTx, listProduct
               disabled={listLoad}
               onClick={listProduct}
             >
-              {listLoad ? <><span className="spinner" /> Submitting...</> : 'List on Arcade Market'}
+              {listLoad ? <><span className="spinner" /> Submitting...</> : 'List on Arcade Market (Medium Gas)'}
             </button>
             <div style={{ fontSize: 11, fontFamily: "'DM Mono',monospace", color: 'var(--text3)', textAlign: 'center', minHeight: 16 }}>{listTx}</div>
             <button className="btn btn-outline" style={{ justifyContent: 'center' }} onClick={saveDraft}>Save Draft</button>

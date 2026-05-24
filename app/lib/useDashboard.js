@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, getTier, short, toDataUri } from './constants'
+import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
 
 function isMissingChainError(error) {
   const message = String(error?.message || '')
@@ -228,7 +228,7 @@ export function useDashboard() {
   }
 
   async function listProduct() {
-    const { address:a, contract:ct, contractAddr:ca } = ws
+    const { address:a, contract:ct, contractAddr:ca, provider:p } = ws
     if (!a) { toast$('Connect wallet first', 'error'); return }
     if (!ca || !ct) { toast$('Configure a valid market contract first', 'error'); setListTx('No contract configured'); return }
     if (!pf.name.trim()) { toast$('Product name required', 'error'); return }
@@ -241,8 +241,10 @@ export function useDashboard() {
     const pu = E.utils.parseUnits(price.toFixed(6), 6)
     const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
     try {
+      setListTx('Estimating medium gas from seller wallet...')
+      const txOverrides = await getMediumGasOverrides(ct, p, [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri], E)
       setListTx('Waiting for MetaMask...')
-      const tx = await ct.listProduct(pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri)
+      const tx = await ct.listProduct(pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri, txOverrides)
       setListTx('TX: '+short(tx.hash,8))
       setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
       const rc = await tx.wait(); prod.txHash=tx.hash
@@ -293,7 +295,42 @@ export function useDashboard() {
 
   async function onImg(e) {
     const f = e.target.files[0]; if (!f) return
-    const u = await toDataUri(f); setPf(x => ({ ...x, imgUri:u, imgPrev:u }))
+    if (f.size > MAX_IMAGE_UPLOAD_BYTES) {
+      e.target.value = ''
+      toast$('Image must be 5 MB or smaller', 'error')
+      return
+    }
+    try {
+      setListTx('Optimizing image for on-chain listing...')
+      const u = await imageToOptimizedDataUri(f)
+      setPf(x => ({ ...x, imgUri:u, imgPrev:u }))
+      setListTx('Image ready')
+    } catch (err) {
+      e.target.value = ''
+      setPf(x => ({ ...x, imgUri:'', imgPrev:'' }))
+      setListTx('')
+      toast$(err.message || 'Image upload failed', 'error')
+    }
+  }
+
+  async function getMediumGasOverrides(ct, p, args, E) {
+    const gasLimit = await ct.estimateGas.listProduct(...args)
+    const bufferedGasLimit = gasLimit.mul(130).div(100)
+
+    try {
+      const fee = await p.getFeeData()
+      if (fee.maxFeePerGas && fee.maxPriorityFeePerGas) {
+        const mediumPriority = fee.maxPriorityFeePerGas.mul(125).div(100)
+        return {
+          gasLimit: bufferedGasLimit,
+          maxPriorityFeePerGas: mediumPriority,
+          maxFeePerGas: fee.maxFeePerGas.add(mediumPriority),
+        }
+      }
+      if (fee.gasPrice) return { gasLimit: bufferedGasLimit, gasPrice: fee.gasPrice.mul(115).div(100) }
+    } catch {}
+
+    return { gasLimit: bufferedGasLimit }
   }
 
   function goTab(name) {

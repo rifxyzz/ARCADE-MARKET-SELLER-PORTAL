@@ -306,7 +306,15 @@ async function listProductOnChain() {
   lb.disabled=true; lb.innerHTML='<span class="spinner"></span> Submitting...';
   ts.textContent='Preparing...'; ts.style.color='var(--copper3)';
   var imageUri='';
-  if (imgFile) { ts.textContent='Processing image...'; imageUri=await fileToDataUri(imgFile); }
+  if (imgFile) {
+    ts.textContent='Processing image...';
+    try { imageUri=await imageToOptimizedDataUri(imgFile); }
+    catch(e) {
+      ts.textContent=e.message||'Image upload failed'; ts.style.color='var(--red)';
+      showToast(ts.textContent,'error');
+      lb.disabled=false; lb.textContent='List on Arcade Market'; return;
+    }
+  }
   if (!contractAddr||!contract) {
     ts.textContent='No contract configured. Save your deployed ArcadeMarket contract in Settings first.';
     ts.style.color='var(--red)';
@@ -316,8 +324,10 @@ async function listProductOnChain() {
   var priceUsdc=ethers.utils.parseUnits(price.toFixed(6),6);
   var product={id:Date.now(),name:name,description:desc,priceUsdc:price,stock:stock,category:cat,imageUri:imageUri,seller:userAddress,active:true,totalSold:0,txHash:null,listedAt:new Date().toISOString(),source:'chain'};
   try {
+    ts.textContent='Estimating medium gas from seller wallet...';
+    var txOverrides=await getMediumGasOverrides(contract,[name,desc,priceUsdc,stock,cat,imageUri]);
     ts.textContent='Waiting for MetaMask...';
-    var tx=await contract.listProduct(name,desc,priceUsdc,stock,cat,imageUri);
+    var tx=await contract.listProduct(name,desc,priceUsdc,stock,cat,imageUri,txOverrides);
     ts.textContent='TX: '+shortAddr(tx.hash,8);
     showTxModal('⬡','Listing Submitted','"'+name+'" is being listed on Arcade Market...',tx.hash);
     var receipt=await tx.wait();
@@ -345,6 +355,9 @@ async function listProductOnChain() {
   renderProducts(localProducts); loadDashboardStats();
 }
 
+var MAX_IMAGE_UPLOAD_BYTES=5*1024*1024;
+var MAX_ONCHAIN_IMAGE_BYTES=180*1024;
+
 function fileToDataUri(file) {
   return new Promise(function(res) {
     var r=new FileReader();
@@ -353,12 +366,62 @@ function fileToDataUri(file) {
   });
 }
 
-function previewImage(event) {
+function loadImage(src) {
+  return new Promise(function(resolve,reject) {
+    var img=new Image();
+    img.onload=function(){resolve(img);};
+    img.onerror=reject;
+    img.src=src;
+  });
+}
+
+async function imageToOptimizedDataUri(file) {
+  if (!file||!file.type||!file.type.startsWith('image/')) throw new Error('Please upload a valid image file.');
+  if (file.size>MAX_IMAGE_UPLOAD_BYTES) throw new Error('Image must be 5 MB or smaller.');
+  var original=await fileToDataUri(file);
+  if (!original) throw new Error('Could not read image file.');
+  if (file.type==='image/gif'&&file.size<=MAX_ONCHAIN_IMAGE_BYTES) return original;
+  var img=await loadImage(original), canvas=document.createElement('canvas'), ctx=canvas.getContext('2d');
+  var maxSide=900, quality=0.82;
+  for (var attempt=0;attempt<8;attempt++) {
+    var scale=Math.min(1,maxSide/Math.max(img.width,img.height));
+    canvas.width=Math.max(1,Math.round(img.width*scale));
+    canvas.height=Math.max(1,Math.round(img.height*scale));
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    ctx.drawImage(img,0,0,canvas.width,canvas.height);
+    var dataUri=canvas.toDataURL('image/jpeg',quality);
+    var approxBytes=Math.ceil((dataUri.length-dataUri.indexOf(',')-1)*3/4);
+    if (approxBytes<=MAX_ONCHAIN_IMAGE_BYTES||attempt===7) return dataUri;
+    quality=Math.max(0.55,quality-0.06);
+    maxSide=Math.max(420,Math.round(maxSide*0.82));
+  }
+  return original;
+}
+
+async function getMediumGasOverrides(ct,args) {
+  var gasLimit=await ct.estimateGas.listProduct.apply(ct.estimateGas,args);
+  var bufferedGasLimit=gasLimit.mul(130).div(100);
+  try {
+    var fee=await provider.getFeeData();
+    if (fee.maxFeePerGas&&fee.maxPriorityFeePerGas) {
+      var mediumPriority=fee.maxPriorityFeePerGas.mul(125).div(100);
+      return {gasLimit:bufferedGasLimit,maxPriorityFeePerGas:mediumPriority,maxFeePerGas:fee.maxFeePerGas.add(mediumPriority)};
+    }
+    if (fee.gasPrice) return {gasLimit:bufferedGasLimit,gasPrice:fee.gasPrice.mul(115).div(100)};
+  } catch(e) {}
+  return {gasLimit:bufferedGasLimit};
+}
+
+async function previewImage(event) {
   var file=event.target.files[0]; if (!file) return;
   var prev=document.getElementById('upload-preview');
-  var r=new FileReader();
-  r.onload=function(e){prev.src=e.target.result;prev.style.display='block';};
-  r.readAsDataURL(file);
+  try {
+    var u=await imageToOptimizedDataUri(file);
+    prev.src=u; prev.style.display='block';
+  } catch(e) {
+    event.target.value=''; prev.style.display='none';
+    showToast(e.message||'Image upload failed','error');
+  }
 }
 
 async function loadOnChainProducts() {

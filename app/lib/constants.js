@@ -35,6 +35,9 @@ export function short(addr, c=4) {
   return addr ? addr.slice(0,c+2)+'\u2026'+addr.slice(-c) : ''
 }
 
+export const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
+export const MAX_ONCHAIN_IMAGE_BYTES = 180 * 1024
+
 export function toDataUri(file) {
   return new Promise(r => {
     const fr = new FileReader()
@@ -42,4 +45,45 @@ export function toDataUri(file) {
     fr.onerror = () => r('')
     fr.readAsDataURL(file)
   })
+}
+
+function loadImage(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image()
+    img.onload = () => resolve(img)
+    img.onerror = reject
+    img.src = src
+  })
+}
+
+export async function imageToOptimizedDataUri(file) {
+  if (!file || !file.type?.startsWith('image/')) throw new Error('Please upload a valid image file.')
+  if (file.size > MAX_IMAGE_UPLOAD_BYTES) throw new Error('Image must be 5 MB or smaller.')
+
+  const original = await toDataUri(file)
+  if (!original) throw new Error('Could not read image file.')
+  if (file.type === 'image/gif' && file.size <= MAX_ONCHAIN_IMAGE_BYTES) return original
+
+  const img = await loadImage(original)
+  const canvas = document.createElement('canvas')
+  const ctx = canvas.getContext('2d')
+  let maxSide = 900
+  let quality = 0.82
+
+  for (let attempt = 0; attempt < 8; attempt += 1) {
+    const scale = Math.min(1, maxSide / Math.max(img.width, img.height))
+    canvas.width = Math.max(1, Math.round(img.width * scale))
+    canvas.height = Math.max(1, Math.round(img.height * scale))
+    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+
+    const dataUri = canvas.toDataURL('image/jpeg', quality)
+    const approxBytes = Math.ceil((dataUri.length - dataUri.indexOf(',') - 1) * 3 / 4)
+    if (approxBytes <= MAX_ONCHAIN_IMAGE_BYTES || attempt === 7) return dataUri
+
+    quality = Math.max(0.55, quality - 0.06)
+    maxSide = Math.max(420, Math.round(maxSide * 0.82))
+  }
+
+  return original
 }
