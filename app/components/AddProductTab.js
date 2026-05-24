@@ -49,10 +49,10 @@ export default function AddProductTab({ pf, setPf, listLoad, listTx, listProduct
             <div className="card-header"><div className="card-title">Product Image</div></div>
             <div style={{ padding: 20 }}>
               <div className="upload-zone">
-                <input type="file" accept="image/*" onChange={onImg} />
+                <input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,.png,.jpg,.jpeg,.gif" onChange={onImg} />
                 <div className="upload-icon">🖼</div>
                 <div className="upload-text">Drag &amp; drop or click to upload</div>
-                <div className="upload-sub">PNG · JPG · GIF · Max 5MB · compressed for on-chain gas</div>
+                <div className="upload-sub">PNG · JPG · JPEG · GIF · Max 5MB · compressed for on-chain gas</div>
                 {pf.imgPrev && (
                   <Image
                     src={pf.imgPrev}
