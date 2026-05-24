@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, getTier, short, toDataUri } from './constants'
+import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, getTier, short, toDataUri } from './constants'
 
 function isMissingChainError(error) {
   const message = String(error?.message || '')
@@ -117,12 +117,13 @@ export function useDashboard() {
       localStorage.setItem('arcade_wallet', a)
       setGSt({ type:'success', msg:`Verified! ${bal} ARCM held. Entering dashboard...` })
       const key = 'arcade_contract_'+a.toLowerCase()
-      const ca = localStorage.getItem(key)||null
+      const ca = localStorage.getItem(key)||DEFAULT_MARKET_CONTRACT
       let ct = null
       if (ca) { try { ct = new E.Contract(ca, ARCADE_ABI, s) } catch {} ; setCInput(ca) }
       const prods = loadLP(a)
       setLocalP(prods)
       setWs({ provider:p, signer:s, address:a, chainId:cid, nftBalance:bal, contract:ct, contractAddr:ca })
+      if (ca) await registerSellerContract(a, ca)
       setTimeout(async () => {
         setGateOpen(false); setGLoad(false)
         await doStats(ct, a, prods, E)

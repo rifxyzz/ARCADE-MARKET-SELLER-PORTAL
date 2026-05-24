@@ -2,9 +2,10 @@
    ARCADE MARKET — Seller Dashboard JS
    Network: Arc Testnet (chainId 5042002)
    Payment: USDC on Arc Testnet
-   Model: Each seller deploys their own ArcadeMarket.sol
-          Contract address saved in localStorage per wallet
+   Model: Shared ArcadeMarket contract for direct on-chain listing
    ============================================================ */
+
+const DEFAULT_MARKET_CONTRACT = '0xF36223FD6544e772269c77c1bcec001dFFafB7C9';
 
 const ARC_TESTNET = {
   chainId:     5042002,
@@ -134,13 +135,18 @@ async function onWalletConnected() {
   loadLocalProducts(); loadContractAddress();
   updateTopbarWallet(); updateNetworkPill(); updateSidebarNFT(); updateSettingsPage();
   initContract(); showContractBanner();
+  if (contractAddr) await registerSellerContract(userAddress, contractAddr);
   await loadOnChainProducts(); await loadDashboardStats();
   showToast('Connected: '+shortAddr(userAddress),'success');
 }
 
 function loadContractAddress() {
   var key='arcade_contract_'+(userAddress||'').toLowerCase();
-  contractAddr = localStorage.getItem(key)||null;
+  contractAddr = localStorage.getItem(key)||DEFAULT_MARKET_CONTRACT;
+  var si=document.getElementById('settings-contract-input');
+  var ci=document.getElementById('contract-addr-input');
+  if (si && !si.value) si.value = contractAddr;
+  if (ci && !ci.value) ci.value = contractAddr;
 }
 
 async function registerSellerContract(seller, marketContractAddr) {
@@ -157,7 +163,7 @@ async function registerSellerContract(seller, marketContractAddr) {
 async function saveContractAddress() {
   var si=document.getElementById('settings-contract-input');
   var ci=document.getElementById('contract-addr-input');
-  var val=(si&&si.value.trim())||(ci&&ci.value.trim())||'';
+  var val=(si&&si.value.trim())||(ci&&ci.value.trim())||DEFAULT_MARKET_CONTRACT;
   if (!val||!val.startsWith('0x')||val.length!==42) { showToast('Enter a valid 0x contract address (42 chars)','error'); return; }
   var key='arcade_contract_'+(userAddress||'').toLowerCase();
   localStorage.setItem(key,val); contractAddr=val;

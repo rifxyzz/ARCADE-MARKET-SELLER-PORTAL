@@ -6,6 +6,8 @@ export const ARC_TESTNET = {
   nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
 }
 
+export const DEFAULT_MARKET_CONTRACT = process.env.NEXT_PUBLIC_MARKETPLACE_CONTRACT || '0xF36223FD6544e772269c77c1bcec001dFFafB7C9'
+
 export const ARCADE_ABI = [
   { inputs:[{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'}], name:'listProduct', outputs:[{internalType:'uint256',name:'productId',type:'uint256'}], stateMutability:'nonpayable', type:'function' },
   { inputs:[{internalType:'address',name:'seller',type:'address'}], name:'getSellerProducts', outputs:[{components:[{internalType:'uint256',name:'id',type:'uint256'},{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'},{internalType:'address',name:'seller',type:'address'},{internalType:'bool',name:'active',type:'bool'},{internalType:'uint256',name:'totalSold',type:'uint256'}],internalType:'struct ArcadeMarket.Product[]',name:'',type:'tuple[]'}], stateMutability:'view', type:'function' },
