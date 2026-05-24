@@ -36,7 +36,7 @@ export function short(addr, c=4) {
 }
 
 export const MAX_IMAGE_UPLOAD_BYTES = 5 * 1024 * 1024
-export const MAX_ONCHAIN_IMAGE_BYTES = 180 * 1024
+export const MAX_ONCHAIN_IMAGE_BYTES = 24 * 1024
 
 export function toDataUri(file) {
   return new Promise(r => {
@@ -67,22 +67,23 @@ export async function imageToOptimizedDataUri(file) {
   const img = await loadImage(original)
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
-  let maxSide = 900
-  let quality = 0.82
+  let maxSide = 360
+  let quality = 0.72
 
-  for (let attempt = 0; attempt < 8; attempt += 1) {
+  for (let attempt = 0; attempt < 10; attempt += 1) {
     const scale = Math.min(1, maxSide / Math.max(img.width, img.height))
     canvas.width = Math.max(1, Math.round(img.width * scale))
     canvas.height = Math.max(1, Math.round(img.height * scale))
-    ctx.clearRect(0, 0, canvas.width, canvas.height)
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, canvas.width, canvas.height)
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
 
     const dataUri = canvas.toDataURL('image/jpeg', quality)
     const approxBytes = Math.ceil((dataUri.length - dataUri.indexOf(',') - 1) * 3 / 4)
     if (approxBytes <= MAX_ONCHAIN_IMAGE_BYTES || attempt === 7) return dataUri
 
-    quality = Math.max(0.55, quality - 0.06)
-    maxSide = Math.max(420, Math.round(maxSide * 0.82))
+    quality = Math.max(0.42, quality - 0.06)
+    maxSide = Math.max(160, Math.round(maxSide * 0.78))
   }
 
   return original
