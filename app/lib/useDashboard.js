@@ -206,8 +206,9 @@ export function useDashboard() {
   }
 
   async function listProduct() {
-    const { address:a, contract:ct } = ws
+    const { address:a, contract:ct, contractAddr:ca } = ws
     if (!a) { toast$('Connect wallet first', 'error'); return }
+    if (!ca || !ct) { toast$('Configure a valid market contract first', 'error'); setListTx('No contract configured'); return }
     if (!pf.name.trim()) { toast$('Product name required', 'error'); return }
     if (!pf.desc.trim()) { toast$('Description required', 'error'); return }
     const price = parseFloat(pf.price), stock = parseInt(pf.stock)
@@ -216,26 +217,21 @@ export function useDashboard() {
     const E = eLib.current
     setListLoad(true); setListTx('Preparing...')
     const pu = E.utils.parseUnits(price.toFixed(6), 6)
-    const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'local' }
-    if (ct) {
-      try {
-        setListTx('Waiting for MetaMask...')
-        const tx = await ct.listProduct(pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri)
-        setListTx('TX: '+short(tx.hash,8))
-        setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
-        const rc = await tx.wait(); prod.txHash=tx.hash; prod.source='chain'
-        const ev = rc.events?.find(e=>e.event==='ProductListed'); if (ev) prod.id=ev.args.productId.toNumber()
-        if (a && ws.contractAddr) await registerSellerContract(a, ws.contractAddr)
-        setListTx('Listed on Arc Testnet!')
-        setTxMod(m => ({ ...m, icon:'✅', title:'Listing Confirmed!', desc:`"${pf.name}" is now live on Arcade Market.` }))
-        toast$(`"${pf.name}" listed!`, 'success')
-      } catch(err) {
-        const msg = err.code===4001?'Rejected.':(err.reason||err.message||'TX failed')
-        setListTx(msg); toast$('TX failed: '+msg, 'error'); setListLoad(false); return
-      }
-    } else {
-      setListTx('Saved locally (configure contract to list on-chain)')
-      toast$(`"${pf.name}" saved locally`, 'info')
+    const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
+    try {
+      setListTx('Waiting for MetaMask...')
+      const tx = await ct.listProduct(pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri)
+      setListTx('TX: '+short(tx.hash,8))
+      setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
+      const rc = await tx.wait(); prod.txHash=tx.hash
+      const ev = rc.events?.find(e=>e.event==='ProductListed'); if (ev) prod.id=ev.args.productId.toNumber()
+      if (a && ca) await registerSellerContract(a, ca)
+      setListTx('Listed on Arc Testnet!')
+      setTxMod(m => ({ ...m, icon:'✅', title:'Listing Confirmed!', desc:`"${pf.name}" is now live on Arcade Market.` }))
+      toast$(`"${pf.name}" listed!`, 'success')
+    } catch(err) {
+      const msg = err.code===4001?'Rejected.':(err.reason||err.message||'TX failed')
+      setListTx(msg); toast$('TX failed: '+msg, 'error'); setListLoad(false); return
     }
     const np = [...localP, prod]; setLocalP(np); saveLP(a, np); setDispP(np)
     setPf({ name:'',desc:'',price:'',stock:'',cat:'Collectibles',imgUri:'',imgPrev:'' })

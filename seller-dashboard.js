@@ -143,7 +143,18 @@ function loadContractAddress() {
   contractAddr = localStorage.getItem(key)||null;
 }
 
-function saveContractAddress() {
+async function registerSellerContract(seller, marketContractAddr) {
+  var apiUrl = 'https://arcade-markets.vercel.app/api/sellers';
+  try {
+    await fetch(apiUrl, {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body:JSON.stringify({ address:seller, contractAddress:marketContractAddr })
+    });
+  } catch(e) { console.warn('registerSellerContract:', e && e.message); }
+}
+
+async function saveContractAddress() {
   var si=document.getElementById('settings-contract-input');
   var ci=document.getElementById('contract-addr-input');
   var val=(si&&si.value.trim())||(ci&&ci.value.trim())||'';
@@ -151,7 +162,8 @@ function saveContractAddress() {
   var key='arcade_contract_'+(userAddress||'').toLowerCase();
   localStorage.setItem(key,val); contractAddr=val;
   initContract(); showContractBanner(); updateContractDisplays();
-  showToast('Contract address saved!','success');
+  if (userAddress) await registerSellerContract(userAddress,val);
+  showToast('Contract address saved and registered for marketplace!','success');
   loadOnChainProducts(); loadDashboardStats();
 }
 
@@ -289,32 +301,33 @@ async function listProductOnChain() {
   ts.textContent='Preparing...'; ts.style.color='var(--copper3)';
   var imageUri='';
   if (imgFile) { ts.textContent='Processing image...'; imageUri=await fileToDataUri(imgFile); }
+  if (!contractAddr||!contract) {
+    ts.textContent='No contract configured. Save your deployed ArcadeMarket contract in Settings first.';
+    ts.style.color='var(--red)';
+    showToast('Configure a valid market contract first','error');
+    lb.disabled=false; lb.textContent='List on Arcade Market'; return;
+  }
   var priceUsdc=ethers.utils.parseUnits(price.toFixed(6),6);
-  var product={id:Date.now(),name:name,description:desc,priceUsdc:price,stock:stock,category:cat,imageUri:imageUri,seller:userAddress,active:true,totalSold:0,txHash:null,listedAt:new Date().toISOString(),source:'local'};
-  if (contract) {
-    try {
-      ts.textContent='Waiting for MetaMask...';
-      var tx=await contract.listProduct(name,desc,priceUsdc,stock,cat,imageUri);
-      ts.textContent='TX: '+shortAddr(tx.hash,8);
-      showTxModal('⬡','Listing Submitted','"'+name+'" is being listed on Arcade Market...',tx.hash);
-      var receipt=await tx.wait();
-      product.txHash=tx.hash; product.source='chain';
-      var ev=receipt.events&&receipt.events.find(function(e){return e.event==='ProductListed';});
-      if (ev) product.id=ev.args.productId.toNumber();
-      ts.textContent='Listed on Arc Testnet!'; ts.style.color='var(--green)';
-      updateTxModal('✅','Listing Confirmed!','"'+name+'" is now live on Arcade Market.');
-      showToast('"'+name+'" listed on Arcade Market!','success');
-    } catch(err) {
-      console.error('listProduct:',err);
-      var msg=err.code===4001?'Rejected by user.':(err.reason||err.message||'TX failed');
-      ts.textContent=msg; ts.style.color='var(--red)';
-      showToast('Transaction failed: '+msg,'error');
-      lb.disabled=false; lb.textContent='List on Arcade Market'; return;
-    }
-  } else {
-    ts.textContent='Saved locally (configure contract to list on-chain)';
-    ts.style.color='var(--text2)';
-    showToast('"'+name+'" saved locally','info');
+  var product={id:Date.now(),name:name,description:desc,priceUsdc:price,stock:stock,category:cat,imageUri:imageUri,seller:userAddress,active:true,totalSold:0,txHash:null,listedAt:new Date().toISOString(),source:'chain'};
+  try {
+    ts.textContent='Waiting for MetaMask...';
+    var tx=await contract.listProduct(name,desc,priceUsdc,stock,cat,imageUri);
+    ts.textContent='TX: '+shortAddr(tx.hash,8);
+    showTxModal('⬡','Listing Submitted','"'+name+'" is being listed on Arcade Market...',tx.hash);
+    var receipt=await tx.wait();
+    product.txHash=tx.hash;
+    var ev=receipt.events&&receipt.events.find(function(e){return e.event==='ProductListed';});
+    if (ev) product.id=ev.args.productId.toNumber();
+    await registerSellerContract(userAddress,contractAddr);
+    ts.textContent='Listed on Arc Testnet!'; ts.style.color='var(--green)';
+    updateTxModal('✅','Listing Confirmed!','"'+name+'" is now live on Arcade Market.');
+    showToast('"'+name+'" listed on Arcade Market!','success');
+  } catch(err) {
+    console.error('listProduct:',err);
+    var msg=err.code===4001?'Rejected by user.':(err.reason||err.message||'TX failed');
+    ts.textContent=msg; ts.style.color='var(--red)';
+    showToast('Transaction failed: '+msg,'error');
+    lb.disabled=false; lb.textContent='List on Arcade Market'; return;
   }
   localProducts.push(product); saveLocalProducts();
   document.getElementById('prod-name').value='';
