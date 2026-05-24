@@ -181,6 +181,17 @@ export function useDashboard() {
     setDispP(ps)
   }
 
+  async function registerSellerContract(seller, contractAddress) {
+    const apiUrl = process.env.NEXT_PUBLIC_MARKET_API_URL || 'https://arcade-markets.vercel.app/api/sellers'
+    try {
+      await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ address: seller, contractAddress }),
+      })
+    } catch {}
+  }
+
   async function saveContract() {
     const v = cInput.trim()
     if (!v||!v.startsWith('0x')||v.length!==42) { toast$('Enter a valid 0x address (42 chars)', 'error'); return }
@@ -189,7 +200,8 @@ export function useDashboard() {
     const E = eLib.current; let ct = null
     if (ws.signer&&E) { try { ct = new E.Contract(v, ARCADE_ABI, ws.signer) } catch {} }
     setWs(w => ({ ...w, contractAddr:v, contract:ct }))
-    toast$('Contract address saved!', 'success')
+    if (ws.address) await registerSellerContract(ws.address, v)
+    toast$('Contract address saved and registered for marketplace!', 'success')
     if (ct&&ws.address&&E) { await doStats(ct, ws.address, localP, E); await doProds(ct, ws.address, localP, E) }
   }
 
@@ -213,6 +225,7 @@ export function useDashboard() {
         setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
         const rc = await tx.wait(); prod.txHash=tx.hash; prod.source='chain'
         const ev = rc.events?.find(e=>e.event==='ProductListed'); if (ev) prod.id=ev.args.productId.toNumber()
+        if (a && ws.contractAddr) await registerSellerContract(a, ws.contractAddr)
         setListTx('Listed on Arc Testnet!')
         setTxMod(m => ({ ...m, icon:'✅', title:'Listing Confirmed!', desc:`"${pf.name}" is now live on Arcade Market.` }))
         toast$(`"${pf.name}" listed!`, 'success')
