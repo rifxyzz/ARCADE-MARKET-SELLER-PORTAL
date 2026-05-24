@@ -5,7 +5,7 @@
    Model: Shared ArcadeMarket contract for direct on-chain listing
    ============================================================ */
 
-const DEFAULT_MARKET_CONTRACT = '0xF36223FD6544e772269c77c1bcec001dFFafB7C9';
+const DEFAULT_MARKET_CONTRACT = '0x58359Ab6bAC51aEcC18312c08385CBba3b1215E6';
 
 const ARC_TESTNET = {
   chainId:     5042002,
