@@ -8,7 +8,7 @@
 
 const ARC_TESTNET = {
   chainId:     2648,
-  chainIdHex:  '0xA58',
+  chainIdHex:  '0xa58',
   name:        'Arc Testnet',
   rpcUrl:      'https://rpc.arc.testnet.circle.com',
   explorerUrl: 'https://testnet.arcscan.app',
@@ -36,6 +36,29 @@ let provider=null, signer=null, userAddress=null, chainId=null;
 let nftBalance=0, contract=null, contractAddr=null, nftContractAddr=null;
 let localProducts=[], draftData={}, toastTimer=null;
 
+function isMissingChainError(error) {
+  var message = String((error && error.message) || '');
+  return error && (error.code===4902 || /unrecognized chain id|unknown chain|not been added|try adding the chain/i.test(message));
+}
+
+async function ensureArcTestnetNetwork() {
+  var params = {
+    chainId: ARC_TESTNET.chainIdHex,
+    chainName: ARC_TESTNET.name,
+    rpcUrls: [ARC_TESTNET.rpcUrl],
+    nativeCurrency: ARC_TESTNET.nativeCurrency,
+    blockExplorerUrls: [ARC_TESTNET.explorerUrl]
+  };
+
+  try {
+    await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId: ARC_TESTNET.chainIdHex }] });
+  } catch (sw) {
+    if (!isMissingChainError(sw)) throw sw;
+    await window.ethereum.request({ method:'wallet_addEthereumChain', params:[params] });
+    await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId: ARC_TESTNET.chainIdHex }] });
+  }
+}
+
 window.addEventListener('DOMContentLoaded', function() {
   loadDraft();
   var saved = localStorage.getItem('arcade_wallet');
@@ -62,13 +85,7 @@ async function connectWallet(silent) {
     chainId = net.chainId;
     if (chainId !== ARC_TESTNET.chainId) {
       setGateStatus('loading','Switching to Arc Testnet...');
-      try {
-        await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{chainId:ARC_TESTNET.chainIdHex}] });
-      } catch(sw) {
-        if (sw.code===4902) {
-          await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{ chainId:ARC_TESTNET.chainIdHex, chainName:ARC_TESTNET.name, rpcUrls:[ARC_TESTNET.rpcUrl], nativeCurrency:ARC_TESTNET.nativeCurrency, blockExplorerUrls:[ARC_TESTNET.explorerUrl] }] });
-        } else throw sw;
-      }
+      await ensureArcTestnetNetwork();
       provider = new ethers.providers.Web3Provider(window.ethereum);
       signer = provider.getSigner();
       userAddress = await signer.getAddress();

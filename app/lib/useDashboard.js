@@ -2,6 +2,40 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, getTier, short, toDataUri } from './constants'
 
+function isMissingChainError(error) {
+  const message = String(error?.message || '')
+  return error?.code === 4902 || /unrecognized chain id|unknown chain|not been added|try adding the chain/i.test(message)
+}
+
+async function ensureArcTestnet() {
+  const params = {
+    chainId: ARC_TESTNET.chainIdHex,
+    chainName: ARC_TESTNET.name,
+    rpcUrls: [ARC_TESTNET.rpcUrl],
+    nativeCurrency: ARC_TESTNET.nativeCurrency,
+    blockExplorerUrls: [ARC_TESTNET.explorerUrl],
+  }
+
+  try {
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: ARC_TESTNET.chainIdHex }],
+    })
+  } catch (error) {
+    if (!isMissingChainError(error)) throw error
+
+    await window.ethereum.request({
+      method: 'wallet_addEthereumChain',
+      params: [params],
+    })
+
+    await window.ethereum.request({
+      method: 'wallet_switchEthereumChain',
+      params: [{ chainId: ARC_TESTNET.chainIdHex }],
+    })
+  }
+}
+
 export function useDashboard() {
   const [ws, setWs] = useState({ provider:null,signer:null,address:null,chainId:null,nftBalance:0,contract:null,contractAddr:null })
   const [gateOpen,  setGateOpen]  = useState(true)
@@ -70,17 +104,7 @@ export function useDashboard() {
       let s = p.getSigner(), a = await s.getAddress(), cid = (await p.getNetwork()).chainId
       if (cid !== ARC_TESTNET.chainId) {
         setGSt({ type:'loading', msg:'Switching to Arc Testnet...' })
-        try {
-          await window.ethereum.request({ method:'wallet_switchEthereumChain', params:[{ chainId:ARC_TESTNET.chainIdHex }] })
-        } catch(sw) {
-          if (sw.code===4902) {
-            await window.ethereum.request({ method:'wallet_addEthereumChain', params:[{
-              chainId:ARC_TESTNET.chainIdHex, chainName:ARC_TESTNET.name,
-              rpcUrls:[ARC_TESTNET.rpcUrl], nativeCurrency:ARC_TESTNET.nativeCurrency,
-              blockExplorerUrls:[ARC_TESTNET.explorerUrl]
-            }]})
-          } else throw sw
-        }
+        await ensureArcTestnet()
         p = new E.providers.Web3Provider(window.ethereum)
         s = p.getSigner(); a = await s.getAddress(); cid = (await p.getNetwork()).chainId
       }
