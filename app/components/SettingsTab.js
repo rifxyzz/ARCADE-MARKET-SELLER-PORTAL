@@ -97,7 +97,6 @@ export default function SettingsTab({ ws, sf, setSf, cInput, setCInput, saveCont
         <a href="https://arcade-markets.vercel.app" target="_blank" rel="noreferrer" className="btn btn-outline">⬡ Go to Marketplace</a>
         <a href="https://arcade-markets.vercel.app/mint" target="_blank" rel="noreferrer" className="btn btn-outline">🃏 Mint Genesis</a>
         <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer" className="btn btn-outline">↗ Arc Explorer</a>
-        <a href="https://faucet.circle.com" target="_blank" rel="noreferrer" className="btn btn-outline">🪙 Get test USDC</a>
       </div>
     </section>
   )

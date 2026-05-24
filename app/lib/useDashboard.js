@@ -257,7 +257,10 @@ export function useDashboard() {
     }
     const np = [...localP, prod]; setLocalP(np); saveLP(a, np); setDispP(np)
     setPf({ name:'',desc:'',price:'',stock:'',cat:'Collectibles',imgUri:'',imgPrev:'' })
-    setListLoad(false); await doStats(ct, a, np, E)
+    setListLoad(false)
+    await doStats(ct, a, np, E)
+    await doProds(ct, a, np, E)
+    await doOrders(ct, a, E)
   }
 
   async function delistProduct(id) {
@@ -295,7 +298,15 @@ export function useDashboard() {
 
   function goTab(name) {
     setTab(name)
-    if ((name==='products'||name==='analytics')&&ws.address) doProds(ws.contract, ws.address, localP, eLib.current)
+    if (!ws.address) return
+    if ((name==='products'||name==='analytics') && ws.contract) {
+      doProds(ws.contract, ws.address, localP, eLib.current)
+    }
+    if (name==='orders' && ws.contract) {
+      doOrders(ws.contract, ws.address, eLib.current)
+      doProds(ws.contract, ws.address, localP, eLib.current)
+      doStats(ws.contract, ws.address, localP, eLib.current)
+    }
   }
 
   function saveStore() {

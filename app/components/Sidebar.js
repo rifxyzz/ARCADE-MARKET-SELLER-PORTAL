@@ -23,7 +23,6 @@ export default function Sidebar({ tab, goTab, dispP, tier, nftBalance }) {
         <div className="nav-section">Account</div>
         <button className={`nav-item${tab==='settings'?' active':''}`} onClick={() => goTab('settings')}><span className="nav-icon">◎</span>Settings</button>
         <a href="https://arcade-markets.vercel.app/market" target="_blank" rel="noreferrer" className="nav-item"><span className="nav-icon">⬖</span>Browse Market</a>
-        <a href="https://arcade-markets.vercel.app/mint" target="_blank" rel="noreferrer" className="nav-item"><span className="nav-icon">🃏</span>Mint Genesis<span className="nav-badge copper">!</span></a>
         <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer" className="nav-item"><span className="nav-icon">↗</span>Arc Explorer</a>
       </nav>
       <div className="nft-status">

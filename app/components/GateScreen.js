@@ -28,8 +28,6 @@ export default function GateScreen({ gateOpen, gLoad, gSt, connect }) {
           Don&apos;t have a Genesis NFT?{' '}
           <a href="https://arcade-markets.vercel.app/mint" target="_blank" rel="noreferrer">Mint ARCM Early Genesis ↗</a><br />
           <a href="https://arcade-markets.vercel.app" target="_blank" rel="noreferrer">arcade-markets.vercel.app ↗</a>
-          &nbsp;·&nbsp;
-          <a href="https://faucet.circle.com" target="_blank" rel="noreferrer">Get test USDC ↗</a>
         </div>
       </div>
     </div>
