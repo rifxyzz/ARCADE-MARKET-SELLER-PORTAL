@@ -1,5 +1,5 @@
 export const ARC_TESTNET = {
-  chainId: 2648, chainIdHex: '0xA58', name: 'Arc Testnet',
+  chainId: 2648, chainIdHex: '0xa58', name: 'Arc Testnet',
   rpcUrl: 'https://rpc.arc.testnet.circle.com',
   explorerUrl: 'https://testnet.arcscan.app',
   explorerTx: 'https://testnet.arcscan.app/tx/',
