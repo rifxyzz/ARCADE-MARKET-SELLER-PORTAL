@@ -1,16 +1,16 @@
 /* ============================================================
    ARCADE MARKET — Seller Dashboard JS
-   Network: Circle Arc Testnet (chainId 2648)
+   Network: Arc Testnet (chainId 5042002)
    Payment: USDC on Arc Testnet
    Model: Each seller deploys their own ArcadeMarket.sol
           Contract address saved in localStorage per wallet
    ============================================================ */
 
 const ARC_TESTNET = {
-  chainId:     2648,
-  chainIdHex:  '0xa58',
+  chainId:     5042002,
+  chainIdHex:  '0x4cef52',
   name:        'Arc Testnet',
-  rpcUrl:      'https://rpc.arc.testnet.circle.com',
+  rpcUrl:      'https://rpc.testnet.arc.network',
   explorerUrl: 'https://testnet.arcscan.app',
   explorerTx:  'https://testnet.arcscan.app/tx/',
   nativeCurrency: { name:'ETH', symbol:'ETH', decimals:18 },
