@@ -47,6 +47,7 @@ export function useDashboard() {
   const [stats,     setStats]     = useState({ revenue:0, orders:0, listings:0 })
   const [localP,    setLocalP]    = useState([])
   const [dispP,     setDispP]     = useState([])
+  const [orders,    setOrders]    = useState([])
   const [pf,        setPf]        = useState({ name:'',desc:'',price:'',stock:'',cat:'Collectibles',imgUri:'',imgPrev:'' })
   const [listLoad,  setListLoad]  = useState(false)
   const [listTx,    setListTx]    = useState('')
@@ -128,6 +129,7 @@ export function useDashboard() {
         setGateOpen(false); setGLoad(false)
         await doStats(ct, a, prods, E)
         await doProds(ct, a, prods, E)
+        await doOrders(ct, a, E)
         toast$('Connected: '+short(a), 'success')
       }, 800)
     } catch(err) {
@@ -161,6 +163,25 @@ export function useDashboard() {
       } catch {}
     }
     setStats({ revenue:rev, orders:ord, listings:lst })
+  }
+
+  async function doOrders(ct, a, E) {
+    if (!a || !ct || !E) { setOrders([]); return }
+    try {
+      const filter = ct.filters.ProductPurchased(null, null, a)
+      const logs = await ct.queryFilter(filter, 0, 'latest')
+      const mapped = logs.map(ev => ({
+        productId: ev.args.productId.toNumber(),
+        buyer: ev.args.buyer,
+        seller: ev.args.seller,
+        amount: parseFloat(E.utils.formatUnits(ev.args.amount, 6)),
+        quantity: ev.args.quantity.toNumber(),
+        txHash: ev.transactionHash,
+      })).reverse()
+      setOrders(mapped)
+    } catch {
+      setOrders([])
+    }
   }
 
   async function doProds(ct, a, prods, E) {
@@ -203,7 +224,7 @@ export function useDashboard() {
     setWs(w => ({ ...w, contractAddr:v, contract:ct }))
     if (ws.address) await registerSellerContract(ws.address, v)
     toast$('Contract address saved and registered for marketplace!', 'success')
-    if (ct&&ws.address&&E) { await doStats(ct, ws.address, localP, E); await doProds(ct, ws.address, localP, E) }
+    if (ct&&ws.address&&E) { await doStats(ct, ws.address, localP, E); await doProds(ct, ws.address, localP, E); await doOrders(ct, ws.address, E) }
   }
 
   async function listProduct() {
@@ -283,7 +304,7 @@ export function useDashboard() {
   }
 
   return {
-    ws, gateOpen, tab, gSt, gLoad, toast, txMod, stats, localP, dispP,
+    ws, gateOpen, tab, gSt, gLoad, toast, txMod, stats, localP, dispP, orders,
     pf, setPf, listLoad, listTx, sf, setSf, cInput, setCInput, avRef,
     connect, disconnect, saveContract, listProduct, delistProduct,
     saveDraft, onImg, goTab, saveStore, setTxMod, toast$,

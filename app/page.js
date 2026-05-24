@@ -71,7 +71,7 @@ export default function Page() {
             goTab={d.goTab}
           />
         )}
-        {d.tab === 'orders' && <OrdersTab />}
+        {d.tab === 'orders' && <OrdersTab orders={d.orders} />}
         {d.tab === 'addproduct' && (
           <AddProductTab
             pf={d.pf}
