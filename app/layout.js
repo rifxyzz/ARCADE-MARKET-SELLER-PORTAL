@@ -4,7 +4,7 @@ export const metadata = {
   title: 'Seller Portal | Arcade Market',
   description: 'Arcade Market Seller Portal — Arc Testnet · Circle',
   icons: {
-    icon: 'https://arcade-markets.vercel.app/favicon.ico',
+    icon: 'https://www.arcademarkets.xyz/favicon.ico',
   },
 }
 

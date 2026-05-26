@@ -59,7 +59,7 @@ export default function SettingsTab({ ws, sf, setSf, cInput, setCInput, saveCont
             Deploy{' '}
             <code style={{ color: 'var(--copper3)', fontFamily: "'DM Mono',monospace", fontSize: 11 }}>ArcadeMarket.sol</code>
             {' '}on Arc Testnet, then paste the address here. Your products will appear on{' '}
-            <a href="https://arcade-markets.vercel.app/market" target="_blank" rel="noreferrer" style={{ color: 'var(--copper3)' }}>arcade-markets.vercel.app/market</a>.
+            <a href="https://www.arcademarkets.xyz/" target="_blank" rel="noreferrer" style={{ color: 'var(--copper3)' }}>arcademarkets.xyz</a>.
           </div>
           <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
             <input
@@ -94,8 +94,8 @@ export default function SettingsTab({ ws, sf, setSf, cInput, setCInput, saveCont
       </div>
 
       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-        <a href="https://arcade-markets.vercel.app" target="_blank" rel="noreferrer" className="btn btn-outline">⬡ Go to Marketplace</a>
-        <a href="https://arcade-markets.vercel.app/mint" target="_blank" rel="noreferrer" className="btn btn-outline">🃏 Mint Genesis</a>
+        <a href="https://www.arcademarkets.xyz/" target="_blank" rel="noreferrer" className="btn btn-outline">⬡ Go to Marketplace</a>
+        <a href="https://www.arcademarkets.xyz/mint" target="_blank" rel="noreferrer" className="btn btn-outline">🃏 Mint Genesis</a>
         <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer" className="btn btn-outline">↗ Arc Explorer</a>
       </div>
     </section>

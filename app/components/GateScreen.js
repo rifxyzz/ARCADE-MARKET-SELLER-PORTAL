@@ -26,8 +26,8 @@ export default function GateScreen({ gateOpen, gLoad, gSt, connect }) {
         <div className={`gate-status ${gSt.type}`}>{gSt.msg}</div>
         <div className="gate-footer">
           Don&apos;t have a Genesis NFT?{' '}
-          <a href="https://arcade-markets.vercel.app/mint" target="_blank" rel="noreferrer">Mint ARCM Early Genesis ↗</a><br />
-          <a href="https://arcade-markets.vercel.app" target="_blank" rel="noreferrer">arcade-markets.vercel.app ↗</a>
+          <a href="https://www.arcademarkets.xyz/mint" target="_blank" rel="noreferrer">Mint ARCM Early Genesis ↗</a><br />
+          <a href="https://www.arcademarkets.xyz/" target="_blank" rel="noreferrer">arcademarkets.xyz ↗</a>
         </div>
       </div>
     </div>

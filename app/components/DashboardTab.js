@@ -37,7 +37,7 @@ export default function DashboardTab({ stats, ws, cInput, setCInput, saveContrac
           <div className="info-banner-title">Early Genesis Seller</div>
           <div className="info-banner-desc">Only 1,000 Genesis NFTs available. Your ARCM NFT unlocks seller privileges — list products directly on Arcade Market.</div>
         </div>
-        <a href="https://arcade-markets.vercel.app/mint" target="_blank" rel="noreferrer" className="banner-btn copper-btn">Mint ARCM ↗</a>
+        <a href="https://www.arcademarkets.xyz/mint" target="_blank" rel="noreferrer" className="banner-btn copper-btn">Mint ARCM ↗</a>
       </div>
 
       <div className="stats-grid">
