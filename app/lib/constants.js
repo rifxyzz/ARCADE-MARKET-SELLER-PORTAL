@@ -7,6 +7,8 @@ export const ARC_TESTNET = {
 }
 
 export const DEFAULT_MARKET_CONTRACT = process.env.NEXT_PUBLIC_MARKETPLACE_CONTRACT || '0xF36223FD6544e772269c77c1bcec001dFFafB7C9'
+export const GENESIS_NFT_CONTRACT = process.env.NEXT_PUBLIC_GENESIS_NFT_CONTRACT || '0x7817f42C4355175Edf0a4d1c8b8a6f6a3E9e148F'
+export const MIN_NFT_BALANCE = Number(process.env.NEXT_PUBLIC_MIN_NFT_BALANCE || 1)
 
 export const ARCADE_ABI = [
   { inputs:[{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'}], name:'listProduct', outputs:[{internalType:'uint256',name:'productId',type:'uint256'}], stateMutability:'nonpayable', type:'function' },

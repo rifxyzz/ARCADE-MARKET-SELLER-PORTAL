@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
+import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, GENESIS_NFT_CONTRACT, MIN_NFT_BALANCE, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
 
 function isMissingChainError(error) {
   const message = String(error?.message || '')
@@ -111,8 +111,8 @@ export function useDashboard() {
       }
       setGSt({ type:'loading', msg:'Checking Genesis NFT balance...' })
       const bal = await checkNFT(p, a, E)
-      if (bal < 1) {
-        setGSt({ type:'error', msg:`Access denied — ${bal} ARCM held. Need >= 1.` })
+      if (bal < MIN_NFT_BALANCE) {
+        setGSt({ type:'error', msg:`Access denied — ${bal} ARCM held. Need >= ${MIN_NFT_BALANCE}.` })
         setGLoad(false); toast$('Mint a Genesis NFT first', 'error'); return
       }
       localStorage.setItem('arcade_wallet', a)
@@ -139,9 +139,13 @@ export function useDashboard() {
   }
 
   async function checkNFT(p, a, E) {
-    const na = localStorage.getItem('arcade_nft_contract')||null
-    if (!na) return 1
-    try { const nc = new E.Contract(na, NFT_ABI, p); return (await nc.balanceOf(a)).toNumber() } catch { return 1 }
+    const na = GENESIS_NFT_CONTRACT
+    if (!na || na === '0x0000000000000000000000000000000000000000') {
+      throw new Error('Genesis NFT contract is not configured.')
+    }
+    const nc = new E.Contract(na, NFT_ABI, p)
+    const balance = await nc.balanceOf(a)
+    return balance.toNumber()
   }
 
   function disconnect() {
