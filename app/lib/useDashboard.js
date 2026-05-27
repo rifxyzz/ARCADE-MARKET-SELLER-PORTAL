@@ -173,16 +173,23 @@ export function useDashboard() {
   async function doOrders(ct, a, E) {
     if (!a || !ct || !E) { setOrders([]); return }
     try {
-      const filter = ct.filters.ProductPurchased(null, null, a)
-      const logs = await ct.queryFilter(filter, 0, 'latest')
-      const mapped = logs.map(ev => ({
-        productId: ev.args.productId.toNumber(),
-        buyer: ev.args.buyer,
-        seller: ev.args.seller,
-        amount: parseFloat(E.utils.formatUnits(ev.args.amount, 6)),
-        quantity: ev.args.quantity.toNumber(),
-        txHash: ev.transactionHash,
-      })).reverse()
+      const legacyFilter = ct.filters['ProductPurchased(uint256,address,address,uint256,uint256)'](null, null, a)
+      const factoryFilter = ct.filters['ProductPurchased(uint256,address,address,uint256,uint256,uint256)'](null, null, a)
+      const logs = [
+        ...(await ct.queryFilter(legacyFilter, 0, 'latest')),
+        ...(await ct.queryFilter(factoryFilter, 0, 'latest')),
+      ].sort((aLog, bLog) => aLog.blockNumber - bLog.blockNumber || aLog.logIndex - bLog.logIndex)
+      const mapped = logs.map(ev => {
+        const amount = ev.args.amount || ev.args.totalPrice
+        return {
+          productId: ev.args.productId.toNumber(),
+          buyer: ev.args.buyer,
+          seller: ev.args.seller,
+          amount: parseFloat(E.utils.formatUnits(amount, 6)),
+          quantity: ev.args.quantity.toNumber(),
+          txHash: ev.transactionHash,
+        }
+      }).reverse()
       setOrders(mapped)
     } catch {
       setOrders([])
