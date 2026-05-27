@@ -12,17 +12,15 @@ export default function DashboardTab({ stats, ws, cInput, setCInput, saveContrac
 
       {ws.address && !ws.contractAddr && (
         <div className="contract-setup">
-          <div className="contract-setup-title">⬡ Connect Your ArcadeMarket Contract</div>
+          <div className="contract-setup-title">⬡ Seller Market Setup</div>
           <div className="contract-setup-desc">
-            Deploy{' '}
-            <code style={{ color: 'var(--copper3)', fontFamily: "'DM Mono',monospace" }}>ArcadeMarket.sol</code>
-            {' '}on Arc Testnet, then paste your contract address below to enable on-chain listing.
+            Seller Portal now creates your seller market from the canonical Arcade factory automatically on connect. You can still paste a custom contract address below if needed.
           </div>
           <div className="contract-input-row">
             <input
               className="form-input"
               type="text"
-              placeholder="0x... your deployed ArcadeMarket contract address"
+              placeholder="0x... optional custom seller market contract"
               value={cInput}
               onChange={e => setCInput(e.target.value)}
             />

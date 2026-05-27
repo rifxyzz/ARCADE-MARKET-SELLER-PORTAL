@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, GENESIS_NFT_CONTRACT, MIN_NFT_BALANCE, MARKET_API_URL, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
+import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, SELLER_FACTORY_ABI, DEFAULT_MARKET_CONTRACT, SELLER_MARKET_FACTORY_CONTRACT, GENESIS_NFT_CONTRACT, MIN_NFT_BALANCE, MARKET_API_URL, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
 
 function isMissingChainError(error) {
   const message = String(error?.message || '')
@@ -118,8 +118,9 @@ export function useDashboard() {
       localStorage.setItem('arcade_wallet', a)
       setGSt({ type:'success', msg:`Verified! ${bal} ARCM held. Entering dashboard...` })
       const key = 'arcade_contract_'+a.toLowerCase()
-      const ca = localStorage.getItem(key)||DEFAULT_MARKET_CONTRACT
+      let ca = localStorage.getItem(key)||DEFAULT_MARKET_CONTRACT
       let ct = null
+      if (!ca) ca = await resolveSellerMarket(a, s, E)
       if (ca) { try { ct = new E.Contract(ca, ARCADE_ABI, s) } catch {} ; setCInput(ca) }
       const prods = loadLP(a)
       setLocalP(prods)
@@ -207,6 +208,29 @@ export function useDashboard() {
     setDispP(ps)
   }
 
+  async function resolveSellerMarket(seller, signer, E) {
+    if (!seller || !signer || !E || !SELLER_MARKET_FACTORY_CONTRACT) return ''
+    try {
+      const factory = new E.Contract(SELLER_MARKET_FACTORY_CONTRACT, SELLER_FACTORY_ABI, signer)
+      const existing = await factory.sellerMarket(seller)
+      if (existing && existing !== '0x0000000000000000000000000000000000000000') return existing
+      setGSt({ type:'loading', msg:'Creating seller market from factory...' })
+      const tx = await factory.createSellerMarket()
+      setGSt({ type:'loading', msg:'Creating seller market TX: '+short(tx.hash,8) })
+      const rc = await tx.wait()
+      const ev = rc.events?.find(e => e.event === 'SellerMarketCreated')
+      const market = ev?.args?.market || await factory.sellerMarket(seller)
+      if (market && market !== '0x0000000000000000000000000000000000000000') {
+        localStorage.setItem('arcade_contract_'+seller.toLowerCase(), market)
+        await registerSellerContract(seller, market)
+        return market
+      }
+    } catch (err) {
+      toast$('Factory setup failed: '+(err.reason||err.message||'unknown error'), 'error')
+    }
+    return ''
+  }
+
   async function registerSellerContract(seller, contractAddress) {
     if (!seller || !contractAddress) return
     try {
@@ -246,13 +270,14 @@ export function useDashboard() {
     const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
     try {
       setListTx('Estimating medium gas from seller wallet...')
-      const txOverrides = await getMediumGasOverrides(ct, p, [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri], E)
+      const listFn = ct.createProduct ? 'createProduct' : 'listProduct'
+      const txOverrides = await getMediumGasOverrides(ct, p, listFn, [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri], E)
       setListTx('Waiting for MetaMask...')
-      const tx = await ct.listProduct(pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri, txOverrides)
+      const tx = await ct[listFn](pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri, txOverrides)
       setListTx('TX: '+short(tx.hash,8))
       setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
       const rc = await tx.wait(); prod.txHash=tx.hash
-      const ev = rc.events?.find(e=>e.event==='ProductListed'); if (ev) prod.id=ev.args.productId.toNumber()
+      const ev = rc.events?.find(e=>e.event==='ProductListed'||e.event==='ProductCreated'); if (ev) prod.id=ev.args.productId.toNumber()
       if (a && ca) await registerSellerContract(a, ca)
       setListTx('Listed on Arc Testnet!')
       setTxMod(m => ({ ...m, icon:'✅', title:'Listing Confirmed!', desc:`"${pf.name}" is now live on Arcade Market.` }))
@@ -274,7 +299,7 @@ export function useDashboard() {
     if (!confirm('Delist this product?')) return
     if (ct) {
       try {
-        const tx = await ct.delistProduct(id)
+        const tx = ct.setProductActive ? await ct.setProductActive(id, false) : await ct.delistProduct(id)
         toast$('Delisting... TX: '+short(tx.hash,8), 'info')
         await tx.wait(); toast$('Delisted!', 'success')
       } catch(e) { toast$('Delist failed: '+(e.reason||e.message), 'error'); return }
@@ -317,8 +342,8 @@ export function useDashboard() {
     }
   }
 
-  async function getMediumGasOverrides(ct, p, args, E) {
-    const gasLimit = await ct.estimateGas.listProduct(...args)
+  async function getMediumGasOverrides(ct, p, fnName, args, E) {
+    const gasLimit = await ct.estimateGas[fnName](...args)
     const bufferedGasLimit = gasLimit.mul(130).div(100)
 
     try {
