@@ -1,11 +1,14 @@
 export const ARC_TESTNET = {
   chainId: 5042002, chainIdHex: '0x4cef52', name: 'Arc Testnet',
-  rpcUrl: 'https://rpc.testnet.arc.network',
+  rpcUrl: process.env.NEXT_PUBLIC_ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.network',
   explorerUrl: 'https://testnet.arcscan.app',
   explorerTx: 'https://testnet.arcscan.app/tx/',
   nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
 }
 
+export const MARKETPLACE_URL = process.env.NEXT_PUBLIC_MARKETPLACE_URL || 'https://www.arcademarkets.xyz'
+export const MARKET_API_URL = process.env.NEXT_PUBLIC_MARKET_API_URL || `${MARKETPLACE_URL}/api/sellers`
+export const MINT_URL = process.env.NEXT_PUBLIC_MINT_URL || `${MARKETPLACE_URL}/mint`
 export const DEFAULT_MARKET_CONTRACT = process.env.NEXT_PUBLIC_MARKETPLACE_CONTRACT || '0xF36223FD6544e772269c77c1bcec001dFFafB7C9'
 export const GENESIS_NFT_CONTRACT = process.env.NEXT_PUBLIC_GENESIS_NFT_CONTRACT || '0x7817f42C4355175Edf0a4d1c8b8a6f6a3E9e148F'
 export const MIN_NFT_BALANCE = Number(process.env.NEXT_PUBLIC_MIN_NFT_BALANCE || 1)
@@ -13,9 +16,11 @@ export const MIN_NFT_BALANCE = Number(process.env.NEXT_PUBLIC_MIN_NFT_BALANCE ||
 export const ARCADE_ABI = [
   { inputs:[{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'}], name:'listProduct', outputs:[{internalType:'uint256',name:'productId',type:'uint256'}], stateMutability:'nonpayable', type:'function' },
   { inputs:[{internalType:'address',name:'seller',type:'address'}], name:'getSellerProducts', outputs:[{components:[{internalType:'uint256',name:'id',type:'uint256'},{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'},{internalType:'address',name:'seller',type:'address'},{internalType:'bool',name:'active',type:'bool'},{internalType:'uint256',name:'totalSold',type:'uint256'}],internalType:'struct ArcadeMarket.Product[]',name:'',type:'tuple[]'}], stateMutability:'view', type:'function' },
+  { inputs:[], name:'getAllProducts', outputs:[{components:[{internalType:'uint256',name:'id',type:'uint256'},{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'},{internalType:'address',name:'seller',type:'address'},{internalType:'bool',name:'active',type:'bool'},{internalType:'uint256',name:'totalSold',type:'uint256'}],internalType:'struct ArcadeMarket.Product[]',name:'',type:'tuple[]'}], stateMutability:'view', type:'function' },
   { inputs:[{internalType:'uint256',name:'productId',type:'uint256'}], name:'delistProduct', outputs:[], stateMutability:'nonpayable', type:'function' },
   { inputs:[{internalType:'address',name:'seller',type:'address'}], name:'getSellerStats', outputs:[{internalType:'uint256',name:'totalRevenue',type:'uint256'},{internalType:'uint256',name:'totalOrders',type:'uint256'},{internalType:'uint256',name:'activeListings',type:'uint256'}], stateMutability:'view', type:'function' },
-  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'productId',type:'uint256'},{indexed:true,internalType:'address',name:'seller',type:'address'},{indexed:false,internalType:'string',name:'name',type:'string'},{indexed:false,internalType:'uint256',name:'priceUsdc',type:'uint256'}], name:'ProductListed', type:'event' }
+  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'productId',type:'uint256'},{indexed:true,internalType:'address',name:'seller',type:'address'},{indexed:false,internalType:'string',name:'name',type:'string'},{indexed:false,internalType:'uint256',name:'priceUsdc',type:'uint256'}], name:'ProductListed', type:'event' },
+  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'productId',type:'uint256'},{indexed:true,internalType:'address',name:'buyer',type:'address'},{indexed:true,internalType:'address',name:'seller',type:'address'},{indexed:false,internalType:'uint256',name:'amount',type:'uint256'},{indexed:false,internalType:'uint256',name:'quantity',type:'uint256'}], name:'ProductPurchased', type:'event' }
 ]
 
 export const NFT_ABI = [

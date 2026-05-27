@@ -1,4 +1,6 @@
 'use client'
+import { MARKETPLACE_URL, MINT_URL } from '../lib/constants'
+
 export default function GateScreen({ gateOpen, gLoad, gSt, connect }) {
   return (
     <div id="gate-screen" className={gateOpen ? '' : 'hidden'}>
@@ -26,8 +28,8 @@ export default function GateScreen({ gateOpen, gLoad, gSt, connect }) {
         <div className={`gate-status ${gSt.type}`}>{gSt.msg}</div>
         <div className="gate-footer">
           Don&apos;t have a Genesis NFT?{' '}
-          <a href="https://www.arcademarkets.xyz/mint" target="_blank" rel="noreferrer">Mint ARCM Early Genesis ↗</a><br />
-          <a href="https://www.arcademarkets.xyz/" target="_blank" rel="noreferrer">arcademarkets.xyz ↗</a>
+          <a href={MINT_URL} target="_blank" rel="noreferrer">Mint ARCM Early Genesis ↗</a><br />
+          <a href={MARKETPLACE_URL} target="_blank" rel="noreferrer">arcademarkets.xyz ↗</a>
         </div>
       </div>
     </div>

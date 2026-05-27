@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, GENESIS_NFT_CONTRACT, MIN_NFT_BALANCE, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
+import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, GENESIS_NFT_CONTRACT, MIN_NFT_BALANCE, MARKET_API_URL, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
 
 function isMissingChainError(error) {
   const message = String(error?.message || '')
@@ -208,9 +208,9 @@ export function useDashboard() {
   }
 
   async function registerSellerContract(seller, contractAddress) {
-    const apiUrl = process.env.NEXT_PUBLIC_MARKET_API_URL || 'https://arcade-markets.vercel.app/api/sellers'
+    if (!seller || !contractAddress) return
     try {
-      await fetch(apiUrl, {
+      await fetch(MARKET_API_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ address: seller, contractAddress }),

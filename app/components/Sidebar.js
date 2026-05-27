@@ -1,9 +1,10 @@
 'use client'
+import { MARKETPLACE_URL } from '../lib/constants'
 
-export default function Sidebar({ tab, goTab, dispP, tier, nftBalance }) {
+export default function Sidebar({ tab, goTab, dispP, tier, nftBalance, ordersCount }) {
   return (
     <aside className="sidebar">
-      <a href="https://www.arcademarkets.xyz/" target="_blank" rel="noreferrer" className="sidebar-logo">
+      <a href={MARKETPLACE_URL} target="_blank" rel="noreferrer" className="sidebar-logo">
         <div className="logo-icon">AM</div>
         <div><div className="logo-name">ARCADE</div><div className="logo-sub">Seller Portal</div></div>
       </a>
@@ -17,12 +18,12 @@ export default function Sidebar({ tab, goTab, dispP, tier, nftBalance }) {
           <span className="nav-badge">{dispP.filter(p => p.active).length}</span>
         </button>
         <button className={`nav-item${tab==='orders'?' active':''}`} onClick={() => goTab('orders')}>
-          <span className="nav-icon">⬡</span>Orders<span className="nav-badge red">0</span>
+          <span className="nav-icon">⬡</span>Orders<span className="nav-badge red">{ordersCount || 0}</span>
         </button>
         <button className={`nav-item${tab==='addproduct'?' active':''}`} onClick={() => goTab('addproduct')}><span className="nav-icon">✦</span>List Product</button>
         <div className="nav-section">Account</div>
         <button className={`nav-item${tab==='settings'?' active':''}`} onClick={() => goTab('settings')}><span className="nav-icon">◎</span>Settings</button>
-        <a href="https://www.arcademarkets.xyz/" target="_blank" rel="noreferrer" className="nav-item"><span className="nav-icon">⬖</span>Browse Market</a>
+        <a href={MARKETPLACE_URL} target="_blank" rel="noreferrer" className="nav-item"><span className="nav-icon">⬖</span>Browse Market</a>
         <a href="https://testnet.arcscan.app" target="_blank" rel="noreferrer" className="nav-item"><span className="nav-icon">↗</span>Arc Explorer</a>
       </nav>
       <div className="nft-status">

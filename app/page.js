@@ -34,6 +34,7 @@ export default function Page() {
         dispP={d.dispP}
         tier={d.tier}
         nftBalance={d.ws.nftBalance}
+        ordersCount={d.orders.length}
       />
 
       <Topbar
@@ -54,6 +55,7 @@ export default function Page() {
             setCInput={d.setCInput}
             saveContract={d.saveContract}
             goTab={d.goTab}
+            orders={d.orders}
           />
         )}
         {d.tab === 'analytics' && (

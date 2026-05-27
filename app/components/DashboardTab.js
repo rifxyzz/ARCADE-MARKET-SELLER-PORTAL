@@ -1,7 +1,7 @@
 'use client'
-import { CHART_H, DAYS } from '../lib/constants'
+import { CHART_H, DAYS, MINT_URL } from '../lib/constants'
 
-export default function DashboardTab({ stats, ws, cInput, setCInput, saveContract, goTab }) {
+export default function DashboardTab({ stats, ws, cInput, setCInput, saveContract, goTab, orders }) {
   const maxBar = Math.max(...CHART_H)
   return (
     <section className="content active">
@@ -37,7 +37,7 @@ export default function DashboardTab({ stats, ws, cInput, setCInput, saveContrac
           <div className="info-banner-title">Early Genesis Seller</div>
           <div className="info-banner-desc">Only 1,000 Genesis NFTs available. Your ARCM NFT unlocks seller privileges — list products directly on Arcade Market.</div>
         </div>
-        <a href="https://www.arcademarkets.xyz/mint" target="_blank" rel="noreferrer" className="banner-btn copper-btn">Mint ARCM ↗</a>
+        <a href={MINT_URL} target="_blank" rel="noreferrer" className="banner-btn copper-btn">Mint ARCM ↗</a>
       </div>
 
       <div className="stats-grid">
@@ -97,10 +97,24 @@ export default function DashboardTab({ stats, ws, cInput, setCInput, saveContrac
             <div className="card-title">Recent Orders</div>
             <button className="card-action" onClick={() => goTab('orders')}>View all</button>
           </div>
-          <div className="empty">
-            <div className="empty-icon">📦</div>
-            <div className="empty-text">No orders yet. List a product to get started.</div>
-          </div>
+          {orders?.length ? (
+            <div style={{ display: 'grid', gap: 10 }}>
+              {orders.slice(0, 3).map(o => (
+                <div key={`${o.txHash}-${o.productId}`} style={{ display: 'flex', justifyContent: 'space-between', gap: 12, padding: '10px 0', borderBottom: '1px solid var(--border)' }}>
+                  <div>
+                    <div style={{ color: 'var(--text1)', fontSize: 13 }}>Product #{o.productId} × {o.quantity}</div>
+                    <div style={{ color: 'var(--text3)', fontSize: 11, fontFamily: "'DM Mono',monospace" }}>{o.buyer?.slice(0, 6)}…{o.buyer?.slice(-4)}</div>
+                  </div>
+                  <div style={{ color: 'var(--copper3)', fontFamily: "'DM Mono',monospace", fontSize: 12 }}>{o.amount.toFixed(2)} USDC</div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty">
+              <div className="empty-icon">📦</div>
+              <div className="empty-text">No orders yet. List a product to get started.</div>
+            </div>
+          )}
         </div>
       </div>
     </section>
