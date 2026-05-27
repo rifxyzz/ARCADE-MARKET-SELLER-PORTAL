@@ -14,6 +14,14 @@ export default function Topbar({ tab, address, isArc, avRef, disconnect, connect
         <div className={`net-dot${isArc ? '' : ' wrong'}`} />
         <span>{address ? (isArc ? 'Arc Testnet' : 'Wrong Network') : 'Detecting...'}</span>
       </div>
+      <a
+        className="topbar-btn faucet-btn"
+        href="https://faucet.circle.com/"
+        target="_blank"
+        rel="noreferrer"
+      >
+        💧 USDC Faucet
+      </a>
       <button
         className={`wallet-btn${address ? ' disconnect' : ''}`}
         onClick={address ? disconnect : () => connect(false)}

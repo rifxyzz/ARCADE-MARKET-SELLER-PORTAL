@@ -296,6 +296,12 @@ body {
   text-decoration: none; white-space: nowrap;
 }
 .topbar-btn:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.15); }
+.faucet-btn {
+  background: rgba(39,174,96,0.12);
+  border-color: rgba(39,174,96,0.35);
+  color: rgba(215,255,229,0.92);
+}
+.faucet-btn:hover { background: rgba(39,174,96,0.2); border-color: rgba(39,174,96,0.55); color: #fff; }
 
 .wallet-btn {
   display: flex; align-items: center; gap: 8px;
