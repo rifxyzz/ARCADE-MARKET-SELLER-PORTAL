@@ -277,10 +277,10 @@ export function useDashboard() {
     const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
     try {
       setListTx('Estimating medium gas from seller wallet...')
-      const listFn = ct.createProduct ? 'createProduct' : 'listProduct'
-      const txOverrides = await getMediumGasOverrides(ct, p, listFn, [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri], E)
+      const listArgs = [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri]
+      const { listFn, txOverrides } = await resolveListCall(ct, p, listArgs, E)
       setListTx('Waiting for MetaMask...')
-      const tx = await ct[listFn](pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri, txOverrides)
+      const tx = await ct[listFn](...listArgs, txOverrides)
       setListTx('TX: '+short(tx.hash,8))
       setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
       const rc = await tx.wait(); prod.txHash=tx.hash
@@ -349,7 +349,18 @@ export function useDashboard() {
     }
   }
 
+  async function resolveListCall(ct, p, args, E) {
+    try {
+      const txOverrides = await getMediumGasOverrides(ct, p, 'createProduct', args, E)
+      return { listFn:'createProduct', txOverrides }
+    } catch {}
+
+    const txOverrides = await getMediumGasOverrides(ct, p, 'listProduct', args, E)
+    return { listFn:'listProduct', txOverrides }
+  }
+
   async function getMediumGasOverrides(ct, p, fnName, args, E) {
+    if (!ct.estimateGas?.[fnName]) throw new Error(`${fnName} is not supported by this contract`)
     const gasLimit = await ct.estimateGas[fnName](...args)
     const bufferedGasLimit = gasLimit.mul(130).div(100)
 
