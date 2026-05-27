@@ -120,11 +120,13 @@ export function useDashboard() {
       const key = 'arcade_contract_'+a.toLowerCase()
       let ca = localStorage.getItem(key)||DEFAULT_MARKET_CONTRACT
       let ct = null
+      // If no saved contract, resolveSellerMarket checks factory first, then creates one
       if (!ca) ca = await resolveSellerMarket(a, s, E)
       if (ca) { try { ct = new E.Contract(ca, ARCADE_ABI, s) } catch {} ; setCInput(ca) }
       const prods = loadLP(a)
       setLocalP(prods)
       setWs({ provider:p, signer:s, address:a, chainId:cid, nftBalance:bal, contract:ct, contractAddr:ca })
+      // Always re-register on every connect so the market API stays up to date
       if (ca) await registerSellerContract(a, ca)
       setTimeout(async () => {
         setGateOpen(false); setGLoad(false)
@@ -278,7 +280,7 @@ export function useDashboard() {
     try {
       setListTx('Estimating medium gas from seller wallet...')
       const listArgs = [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri]
-      const { listFn, txOverrides } = await resolveListCall(ct, p, listArgs, E)
+      const { listFn, txOverrides } = await resolveListCall(ct, p, listArgs)
       setListTx('Waiting for MetaMask...')
       const tx = await ct[listFn](...listArgs, txOverrides)
       setListTx('TX: '+short(tx.hash,8))
@@ -349,17 +351,17 @@ export function useDashboard() {
     }
   }
 
-  async function resolveListCall(ct, p, args, E) {
+  async function resolveListCall(ct, p, args) {
     try {
-      const txOverrides = await getMediumGasOverrides(ct, p, 'createProduct', args, E)
+      const txOverrides = await getMediumGasOverrides(ct, p, 'createProduct', args)
       return { listFn:'createProduct', txOverrides }
     } catch {}
 
-    const txOverrides = await getMediumGasOverrides(ct, p, 'listProduct', args, E)
+    const txOverrides = await getMediumGasOverrides(ct, p, 'listProduct', args)
     return { listFn:'listProduct', txOverrides }
   }
 
-  async function getMediumGasOverrides(ct, p, fnName, args, E) {
+  async function getMediumGasOverrides(ct, p, fnName, args) {
     if (!ct.estimateGas?.[fnName]) throw new Error(`${fnName} is not supported by this contract`)
     const gasLimit = await ct.estimateGas[fnName](...args)
     const bufferedGasLimit = gasLimit.mul(130).div(100)
