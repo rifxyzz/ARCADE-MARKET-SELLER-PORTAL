@@ -20,7 +20,7 @@ export default function Topbar({ tab, address, isArc, avRef, disconnect, connect
         target="_blank"
         rel="noreferrer"
       >
-        💧 USDC Faucet
+        Get Faucet
       </a>
       <button
         className={`wallet-btn${address ? ' disconnect' : ''}`}

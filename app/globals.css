@@ -297,6 +297,9 @@ body {
 }
 .topbar-btn:hover { background: rgba(255,255,255,0.08); color: #fff; border-color: rgba(255,255,255,0.15); }
 .faucet-btn {
+  gap: 5px;
+  padding: 5px 11px;
+  font-size: 10px;
   background: rgba(39,174,96,0.12);
   border-color: rgba(39,174,96,0.35);
   color: rgba(215,255,229,0.92);
