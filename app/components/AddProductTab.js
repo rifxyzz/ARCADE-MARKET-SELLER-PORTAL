@@ -100,7 +100,7 @@ export default function AddProductTab({ pf, setPf, listLoad, listTx, listProduct
             <div style={{ padding: 16 }}>
               <div style={{ fontSize: 11, color: 'var(--text3)', marginBottom: 8, fontFamily: "'DM Mono',monospace" }}>ArcadeMarket contract:</div>
               <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 10, color: 'var(--navy3)', background: 'rgba(255,255,255,0.04)', padding: '10px 12px', borderRadius: 8, border: '1px solid var(--border)', wordBreak: 'break-all' }}>
-                {ws.contractAddr || 'Not configured'}
+                {ws.sellerContractAddr || 'Not deployed yet'}
               </div>
             </div>
           </div>

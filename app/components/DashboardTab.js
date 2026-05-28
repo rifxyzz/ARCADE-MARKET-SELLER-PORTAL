@@ -1,7 +1,7 @@
 'use client'
 import { CHART_H, DAYS, MINT_URL } from '../lib/constants'
 
-export default function DashboardTab({ stats, ws, cInput, setCInput, saveContract, goTab, orders }) {
+export default function DashboardTab({ stats, ws, hasSellerContract, deployStore, deployLoad, goTab, orders }) {
   const maxBar = Math.max(...CHART_H)
   return (
     <section className="content active">
@@ -10,22 +10,15 @@ export default function DashboardTab({ stats, ws, cInput, setCInput, saveContrac
         <div className="page-sub">Your store performance on Arc Testnet · USDC settlements</div>
       </div>
 
-      {ws.address && !ws.contractAddr && (
+      {ws.address && !hasSellerContract && (
         <div className="contract-setup">
-          <div className="contract-setup-title">⬡ Seller Market Setup</div>
+          <div className="contract-setup-title">⬡ Deploy Your Store</div>
           <div className="contract-setup-desc">
-            Seller Portal now creates your seller market from the canonical Arcade factory automatically on connect. You can still paste a custom contract address below if needed.
+            Your seller contract hasn&apos;t been deployed yet. Deploy once — it&apos;s your personal on-chain store, registered in the Arcade Market factory.
           </div>
-          <div className="contract-input-row">
-            <input
-              className="form-input"
-              type="text"
-              placeholder="0x... optional custom seller market contract"
-              value={cInput}
-              onChange={e => setCInput(e.target.value)}
-            />
-            <button className="btn btn-primary btn-sm" onClick={saveContract}>Save</button>
-          </div>
+          <button className="btn btn-primary" onClick={deployStore} disabled={deployLoad}>
+            {deployLoad ? <><span className="spinner" /> Deploying...</> : '⬡ Deploy My Store'}
+          </button>
         </div>
       )}
 

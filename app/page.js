@@ -51,9 +51,9 @@ export default function Page() {
           <DashboardTab
             stats={d.stats}
             ws={d.ws}
-            cInput={d.cInput}
-            setCInput={d.setCInput}
-            saveContract={d.saveContract}
+            hasSellerContract={d.hasSellerContract}
+            deployStore={d.deployStore}
+            deployLoad={d.deployLoad}
             goTab={d.goTab}
             orders={d.orders}
           />
@@ -91,9 +91,6 @@ export default function Page() {
             ws={d.ws}
             sf={d.sf}
             setSf={d.setSf}
-            cInput={d.cInput}
-            setCInput={d.setCInput}
-            saveContract={d.saveContract}
             saveStore={d.saveStore}
             disconnect={d.disconnect}
             tier={d.tier}

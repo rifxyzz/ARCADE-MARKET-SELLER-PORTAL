@@ -7,35 +7,30 @@ export const ARC_TESTNET = {
 }
 
 export const MARKETPLACE_URL = process.env.NEXT_PUBLIC_MARKETPLACE_URL || 'https://www.arcademarkets.xyz'
-export const MARKET_API_URL = process.env.NEXT_PUBLIC_MARKET_API_URL || `${MARKETPLACE_URL}/api/sellers`
 export const MINT_URL = process.env.NEXT_PUBLIC_MINT_URL || `${MARKETPLACE_URL}/mint`
-export const DEFAULT_MARKET_CONTRACT = process.env.NEXT_PUBLIC_MARKETPLACE_CONTRACT || '0x75D519BE00B4591E33Be076bC66f06E71d83E8F1'
-export const SELLER_MARKET_FACTORY_CONTRACT = process.env.NEXT_PUBLIC_SELLER_MARKET_FACTORY_CONTRACT || process.env.NEXT_PUBLIC_SELLER_MARKET_FACTORY_ADDRESS || '0x68Ea73653605B81f309DD5DcE4DfCc663001dF0a'
+export const FACTORY_ADDRESS = process.env.NEXT_PUBLIC_FACTORY_ADDRESS || '0xD7939c3B28ab9e8726a894F3FC5d4b390833D3Fe'
 export const GENESIS_NFT_CONTRACT = process.env.NEXT_PUBLIC_GENESIS_NFT_CONTRACT || '0x29350372405728E00eb5D2619Cfe61C7D6e3806d'
 export const MIN_NFT_BALANCE = Number(process.env.NEXT_PUBLIC_MIN_NFT_BALANCE || 1)
 
-export const ARCADE_ABI = [
-  // listProduct — matches ArcadeMarket.sol: (name, description, priceUsdc, stock, category, imageUri)
-  { inputs:[{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'}], name:'listProduct', outputs:[{internalType:'uint256',name:'productId',type:'uint256'}], stateMutability:'nonpayable', type:'function' },
-  // getAllProducts — returns all active products
-  { inputs:[], name:'getAllProducts', outputs:[{components:[{internalType:'uint256',name:'id',type:'uint256'},{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'},{internalType:'address',name:'seller',type:'address'},{internalType:'bool',name:'active',type:'bool'},{internalType:'uint256',name:'totalSold',type:'uint256'}],internalType:'struct ArcadeMarket.Product[]',name:'',type:'tuple[]'}], stateMutability:'view', type:'function' },
-  // getSellerProducts — returns products for a specific seller
-  { inputs:[{internalType:'address',name:'seller',type:'address'}], name:'getSellerProducts', outputs:[{components:[{internalType:'uint256',name:'id',type:'uint256'},{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'priceUsdc',type:'uint256'},{internalType:'uint256',name:'stock',type:'uint256'},{internalType:'string',name:'category',type:'string'},{internalType:'string',name:'imageUri',type:'string'},{internalType:'address',name:'seller',type:'address'},{internalType:'bool',name:'active',type:'bool'},{internalType:'uint256',name:'totalSold',type:'uint256'}],internalType:'struct ArcadeMarket.Product[]',name:'',type:'tuple[]'}], stateMutability:'view', type:'function' },
-  // delistProduct
-  { inputs:[{internalType:'uint256',name:'productId',type:'uint256'}], name:'delistProduct', outputs:[], stateMutability:'nonpayable', type:'function' },
-  // purchaseProduct
-  { inputs:[{internalType:'uint256',name:'productId',type:'uint256'},{internalType:'uint256',name:'quantity',type:'uint256'}], name:'purchaseProduct', outputs:[], stateMutability:'nonpayable', type:'function' },
-  // events
-  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'productId',type:'uint256'},{indexed:true,internalType:'address',name:'seller',type:'address'},{indexed:false,internalType:'string',name:'name',type:'string'},{indexed:false,internalType:'uint256',name:'priceUsdc',type:'uint256'}], name:'ProductListed', type:'event' },
-  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'productId',type:'uint256'},{indexed:true,internalType:'address',name:'buyer',type:'address'},{indexed:true,internalType:'address',name:'seller',type:'address'},{indexed:false,internalType:'uint256',name:'amount',type:'uint256'},{indexed:false,internalType:'uint256',name:'quantity',type:'uint256'}], name:'ProductPurchased', type:'event' },
-  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'productId',type:'uint256'},{indexed:true,internalType:'address',name:'seller',type:'address'}], name:'ProductDelisted', type:'event' },
+// ArcadeMarketFactory — deployed at FACTORY_ADDRESS
+export const FACTORY_ABI = [
+  { inputs:[], name:'deploySellerContract', outputs:[{internalType:'address',name:'sellerContract',type:'address'}], stateMutability:'nonpayable', type:'function' },
+  { inputs:[], name:'getAllSellerContracts', outputs:[{internalType:'address[]',name:'',type:'address[]'}], stateMutability:'view', type:'function' },
+  { inputs:[{internalType:'address',name:'seller',type:'address'}], name:'getSellerContract', outputs:[{internalType:'address',name:'',type:'address'}], stateMutability:'view', type:'function' },
+  { inputs:[], name:'totalSellers', outputs:[{internalType:'uint256',name:'',type:'uint256'}], stateMutability:'view', type:'function' },
+  { anonymous:false, inputs:[{indexed:true,internalType:'address',name:'seller',type:'address'},{indexed:true,internalType:'address',name:'sellerContract',type:'address'}], name:'SellerContractDeployed', type:'event' },
 ]
 
-export const SELLER_FACTORY_ABI = [
-  { inputs:[{internalType:'address',name:'seller',type:'address'}], name:'sellerMarket', outputs:[{internalType:'address',name:'',type:'address'}], stateMutability:'view', type:'function' },
-  { inputs:[], name:'createSellerMarket', outputs:[{internalType:'address',name:'market',type:'address'}], stateMutability:'nonpayable', type:'function' },
-  { inputs:[{internalType:'address',name:'seller',type:'address'}], name:'createSellerMarketFor', outputs:[{internalType:'address',name:'market',type:'address'}], stateMutability:'nonpayable', type:'function' },
-  { anonymous:false, inputs:[{indexed:true,internalType:'address',name:'seller',type:'address'},{indexed:true,internalType:'address',name:'market',type:'address'},{indexed:true,internalType:'uint256',name:'index',type:'uint256'}], name:'SellerMarketCreated', type:'event' },
+// ArcadeMarketSeller — per-seller contract deployed by the factory
+export const SELLER_ABI = [
+  { inputs:[{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'price',type:'uint256'},{internalType:'uint256',name:'quantity',type:'uint256'},{internalType:'string',name:'imageURI',type:'string'},{internalType:'string',name:'category',type:'string'}], name:'listProduct', outputs:[{internalType:'uint256',name:'id',type:'uint256'}], stateMutability:'nonpayable', type:'function' },
+  { inputs:[], name:'getListings', outputs:[{components:[{internalType:'uint256',name:'id',type:'uint256'},{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'price',type:'uint256'},{internalType:'uint256',name:'quantity',type:'uint256'},{internalType:'string',name:'imageURI',type:'string'},{internalType:'string',name:'category',type:'string'},{internalType:'bool',name:'active',type:'bool'}],internalType:'struct ArcadeMarketSeller.Listing[]',name:'',type:'tuple[]'}], stateMutability:'view', type:'function' },
+  { inputs:[{internalType:'uint256',name:'id',type:'uint256'}], name:'getListing', outputs:[{components:[{internalType:'uint256',name:'id',type:'uint256'},{internalType:'string',name:'name',type:'string'},{internalType:'string',name:'description',type:'string'},{internalType:'uint256',name:'price',type:'uint256'},{internalType:'uint256',name:'quantity',type:'uint256'},{internalType:'string',name:'imageURI',type:'string'},{internalType:'string',name:'category',type:'string'},{internalType:'bool',name:'active',type:'bool'}],internalType:'struct ArcadeMarketSeller.Listing',name:'',type:'tuple'}], stateMutability:'view', type:'function' },
+  { inputs:[{internalType:'uint256',name:'id',type:'uint256'}], name:'delistProduct', outputs:[], stateMutability:'nonpayable', type:'function' },
+  { inputs:[], name:'owner', outputs:[{internalType:'address',name:'',type:'address'}], stateMutability:'view', type:'function' },
+  { inputs:[], name:'totalListings', outputs:[{internalType:'uint256',name:'',type:'uint256'}], stateMutability:'view', type:'function' },
+  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'id',type:'uint256'},{indexed:false,internalType:'string',name:'name',type:'string'},{indexed:false,internalType:'uint256',name:'price',type:'uint256'},{indexed:false,internalType:'uint256',name:'quantity',type:'uint256'}], name:'ProductListed', type:'event' },
+  { anonymous:false, inputs:[{indexed:true,internalType:'uint256',name:'id',type:'uint256'}], name:'ProductDelisted', type:'event' },
 ]
 
 export const NFT_ABI = [

@@ -8,7 +8,7 @@ const TIERS = [
   { id: 'legendary', emoji: '🟡', name: 'LEGENDARY', perk: <><strong>Unlimited</strong> listings</> },
 ]
 
-export default function SettingsTab({ ws, sf, setSf, cInput, setCInput, saveContract, saveStore, disconnect, tier }) {
+export default function SettingsTab({ ws, sf, setSf, saveStore, disconnect, tier }) {
   return (
     <section className="content active">
       <div className="page-header">
@@ -55,25 +55,12 @@ export default function SettingsTab({ ws, sf, setSf, cInput, setCInput, saveCont
         </div>
 
         <div className="settings-section">
-          <div className="settings-title">Seller Market Contract</div>
+          <div className="settings-title">Seller Contract</div>
           <div className="settings-desc">
-            The portal auto-creates/loads your seller market from the canonical Arcade factory. Products from factory-created contracts are indexed by{' '}
-            <a href={MARKETPLACE_URL} target="_blank" rel="noreferrer" style={{ color: 'var(--copper3)' }}>arcademarkets.xyz</a>{' '}
-            without waiting for another login. Paste a custom contract only for migration/debugging.
+            Your personal store contract, deployed via the Arcade Market factory. All listings are stored here on-chain.
           </div>
-          <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 10 }}>
-            <input
-              className="form-input"
-              type="text"
-              placeholder="0x... optional custom seller market contract"
-              style={{ fontFamily: "'DM Mono',monospace", fontSize: 12 }}
-              value={cInput}
-              onChange={e => setCInput(e.target.value)}
-            />
-            <button className="btn btn-primary btn-sm" onClick={saveContract}>Save</button>
-          </div>
-          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--navy3)', wordBreak: 'break-all' }}>
-            {ws.contractAddr || 'No contract configured'}
+          <div style={{ fontFamily: "'DM Mono',monospace", fontSize: 11, color: 'var(--navy3)', background: 'rgba(255,255,255,0.04)', padding: '10px 14px', borderRadius: 10, border: '1px solid var(--border)', wordBreak: 'break-all' }}>
+            {ws.sellerContractAddr || 'No store deployed yet — go to Dashboard to deploy.'}
           </div>
         </div>
 
