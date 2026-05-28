@@ -158,11 +158,11 @@ export function useDashboard() {
     let rev = 0, ord = 0, lst = 0
     if (ct && E) {
       try {
-        const raw = await ct.getSellerListings(a)
-        const listings = raw.map(l => ({ active: l.active, price: l.price, soldCount: l.soldCount }))
+        const raw = await ct.getSellerProducts(a)
+        const listings = raw.map(l => ({ active: l.active, priceUsdc: l.priceUsdc, totalSold: l.totalSold }))
         lst = listings.filter(l => l.active).length
-        rev = listings.reduce((sum, l) => sum + parseFloat(E.utils.formatUnits(l.price.mul ? l.price.mul(l.soldCount) : BigInt(l.price) * BigInt(l.soldCount), 6)), 0)
-        ord = listings.reduce((sum, l) => sum + (l.soldCount.toNumber ? l.soldCount.toNumber() : Number(l.soldCount)), 0)
+        rev = listings.reduce((sum, l) => sum + parseFloat(E.utils.formatUnits(l.priceUsdc.mul ? l.priceUsdc.mul(l.totalSold) : BigInt(l.priceUsdc) * BigInt(l.totalSold), 6)), 0)
+        ord = listings.reduce((sum, l) => sum + (l.totalSold.toNumber ? l.totalSold.toNumber() : Number(l.totalSold)), 0)
       } catch {
         lst = (prods || []).filter(p => p.active).length
       }
@@ -175,14 +175,14 @@ export function useDashboard() {
   async function doOrders(ct, a, E) {
     if (!a || !ct || !E) { setOrders([]); return }
     try {
-      const filter = ct.filters['ListingPurchased(uint256,address,address,uint256,uint256)'](null, null, a)
+      const filter = ct.filters['ProductPurchased(uint256,address,address,uint256,uint256)'](null, null, a)
       const logs = (await ct.queryFilter(filter, 0, 'latest'))
         .sort((aLog, bLog) => aLog.blockNumber - bLog.blockNumber || aLog.logIndex - bLog.logIndex)
       const mapped = logs.map(ev => ({
-        productId: ev.args.id.toNumber(),
+        productId: ev.args.productId.toNumber(),
         buyer: ev.args.buyer,
         seller: ev.args.seller,
-        amount: parseFloat(E.utils.formatUnits(ev.args.total, 6)),
+        amount: parseFloat(E.utils.formatUnits(ev.args.amount, 6)),
         quantity: ev.args.quantity.toNumber(),
         txHash: ev.transactionHash,
       })).reverse()
@@ -197,18 +197,18 @@ export function useDashboard() {
     let ps = []
     if (ct && E) {
       try {
-        const raw = await ct.getSellerListings(a)
+        const raw = await ct.getSellerProducts(a)
         ps = raw.map(l => ({
           id: l.id.toNumber(),
           name: l.name,
           description: l.description,
-          priceUsdc: parseFloat(E.utils.formatUnits(l.price, 6)),
-          stock: l.quantity.toNumber(),
+          priceUsdc: parseFloat(E.utils.formatUnits(l.priceUsdc, 6)),
+          stock: l.stock.toNumber(),
           category: l.category,
-          imageUri: l.imageURI,
+          imageUri: l.imageUri,
           seller: l.seller,
           active: l.active,
-          totalSold: l.soldCount.toNumber(),
+          totalSold: l.totalSold.toNumber(),
           source: 'chain',
         }))
       } catch { ps = prods || [] }
@@ -238,18 +238,18 @@ export function useDashboard() {
     const E = eLib.current
     setListLoad(true); setListTx('Preparing...')
     const pu = E.utils.parseUnits(price.toFixed(6), 6)
-    // arg order: name, description, price, quantity, imageURI, category
-    const listArgs = [pf.name.trim(), pf.desc.trim(), pu, stock, pf.imgUri, pf.cat]
+    // arg order matches listProduct(name, description, priceUsdc, stock, category, imageUri)
+    const listArgs = [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri]
     const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
     try {
       setListTx('Estimating gas...')
-      const txOverrides = await getMediumGasOverrides(ct, p, 'createListing', listArgs)
+      const txOverrides = await getMediumGasOverrides(ct, p, 'listProduct', listArgs)
       setListTx('Waiting for MetaMask...')
-      const tx = await ct.createListing(...listArgs, { ...txOverrides, gasLimit: 500000n })
+      const tx = await ct.listProduct(...listArgs, { ...txOverrides, gasLimit: 500000n })
       setListTx('TX: '+short(tx.hash,8))
       setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
       const rc = await tx.wait(); prod.txHash=tx.hash
-      const ev = rc.events?.find(e=>e.event==='ListingCreated'); if (ev) prod.id=ev.args.id.toNumber()
+      const ev = rc.events?.find(e=>e.event==='ProductListed'); if (ev) prod.id=ev.args.productId.toNumber()
       setListTx('Listed on Arc Testnet!')
       setTxMod(m => ({ ...m, icon:'✅', title:'Listing Confirmed!', desc:`"${pf.name}" is now live on Arcade Market.` }))
       toast$(`"${pf.name}" listed!`, 'success')
@@ -270,7 +270,7 @@ export function useDashboard() {
     if (!confirm('Delist this product?')) return
     if (ct) {
       try {
-        const tx = await ct.delistItem(id)
+        const tx = await ct.delistProduct(id)
         toast$('Delisting... TX: '+short(tx.hash,8), 'info')
         await tx.wait(); toast$('Delisted!', 'success')
       } catch(e) { toast$('Delist failed: '+(e.reason||e.message), 'error'); return }
