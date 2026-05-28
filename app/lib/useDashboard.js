@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
-import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, SELLER_FACTORY_ABI, DEFAULT_MARKET_CONTRACT, SELLER_MARKET_FACTORY_CONTRACT, GENESIS_NFT_CONTRACT, MIN_NFT_BALANCE, MARKET_API_URL, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
+import { ARC_TESTNET, ARCADE_ABI, NFT_ABI, DEFAULT_MARKET_CONTRACT, GENESIS_NFT_CONTRACT, MIN_NFT_BALANCE, getTier, short, imageToOptimizedDataUri, MAX_IMAGE_UPLOAD_BYTES } from './constants'
 
 function isMissingChainError(error) {
   const message = String(error?.message || '')
@@ -117,17 +117,12 @@ export function useDashboard() {
       }
       localStorage.setItem('arcade_wallet', a)
       setGSt({ type:'success', msg:`Verified! ${bal} ARCM held. Entering dashboard...` })
-      const key = 'arcade_contract_'+a.toLowerCase()
-      let ca = localStorage.getItem(key)||DEFAULT_MARKET_CONTRACT
+      const ca = DEFAULT_MARKET_CONTRACT
       let ct = null
-      // If no saved contract, resolveSellerMarket checks factory first, then creates one
-      if (!ca) ca = await resolveSellerMarket(a, s, E)
       if (ca) { try { ct = new E.Contract(ca, ARCADE_ABI, s) } catch {} ; setCInput(ca) }
       const prods = loadLP(a)
       setLocalP(prods)
       setWs({ provider:p, signer:s, address:a, chainId:cid, nftBalance:bal, contract:ct, contractAddr:ca })
-      // Always re-register on every connect so the market API stays up to date
-      if (ca) await registerSellerContract(a, ca)
       setTimeout(async () => {
         setGateOpen(false); setGLoad(false)
         await doStats(ct, a, prods, E)
@@ -160,34 +155,37 @@ export function useDashboard() {
 
   async function doStats(ct, a, prods, E) {
     if (!a) return
-    let rev=0, ord=0, lst=(prods||[]).filter(p=>p.active).length
-    if (ct&&E) {
+    let rev = 0, ord = 0, lst = 0
+    if (ct && E) {
       try {
-        const s = await ct.getSellerStats(a)
-        rev = parseFloat(E.utils.formatUnits(s.totalRevenue, 6))
-        ord = s.totalOrders.toNumber()
-        lst = s.activeListings.toNumber()
-      } catch {}
+        const raw = await ct.getSellerListings(a)
+        const listings = raw.map(l => ({ active: l.active, price: l.price, soldCount: l.soldCount }))
+        lst = listings.filter(l => l.active).length
+        rev = listings.reduce((sum, l) => sum + parseFloat(E.utils.formatUnits(l.price.mul ? l.price.mul(l.soldCount) : BigInt(l.price) * BigInt(l.soldCount), 6)), 0)
+        ord = listings.reduce((sum, l) => sum + (l.soldCount.toNumber ? l.soldCount.toNumber() : Number(l.soldCount)), 0)
+      } catch {
+        lst = (prods || []).filter(p => p.active).length
+      }
+    } else {
+      lst = (prods || []).filter(p => p.active).length
     }
-    setStats({ revenue:rev, orders:ord, listings:lst })
+    setStats({ revenue: rev, orders: ord, listings: lst })
   }
 
   async function doOrders(ct, a, E) {
     if (!a || !ct || !E) { setOrders([]); return }
     try {
-      const filter = ct.filters['ProductPurchased(uint256,address,address,uint256,uint256)'](null, null, a)
+      const filter = ct.filters['ListingPurchased(uint256,address,address,uint256,uint256)'](null, null, a)
       const logs = (await ct.queryFilter(filter, 0, 'latest'))
         .sort((aLog, bLog) => aLog.blockNumber - bLog.blockNumber || aLog.logIndex - bLog.logIndex)
-      const mapped = logs.map(ev => {
-        return {
-          productId: ev.args.productId.toNumber(),
-          buyer: ev.args.buyer,
-          seller: ev.args.seller,
-          amount: parseFloat(E.utils.formatUnits(ev.args.amount, 6)),
-          quantity: ev.args.quantity.toNumber(),
-          txHash: ev.transactionHash,
-        }
-      }).reverse()
+      const mapped = logs.map(ev => ({
+        productId: ev.args.id.toNumber(),
+        buyer: ev.args.buyer,
+        seller: ev.args.seller,
+        amount: parseFloat(E.utils.formatUnits(ev.args.total, 6)),
+        quantity: ev.args.quantity.toNumber(),
+        txHash: ev.transactionHash,
+      })).reverse()
       setOrders(mapped)
     } catch {
       setOrders([])
@@ -197,66 +195,34 @@ export function useDashboard() {
   async function doProds(ct, a, prods, E) {
     if (!a) return
     let ps = []
-    if (ct&&E) {
+    if (ct && E) {
       try {
-        const raw = await ct.getSellerProducts(a)
-        ps = raw.map(p => ({
-          id:p.id.toNumber(), name:p.name, description:p.description,
-          priceUsdc:parseFloat(E.utils.formatUnits(p.priceUsdc,6)),
-          stock:p.stock.toNumber(), category:p.category, imageUri:p.imageUri,
-          seller:p.seller, active:p.active, totalSold:p.totalSold.toNumber(), source:'chain'
+        const raw = await ct.getSellerListings(a)
+        ps = raw.map(l => ({
+          id: l.id.toNumber(),
+          name: l.name,
+          description: l.description,
+          priceUsdc: parseFloat(E.utils.formatUnits(l.price, 6)),
+          stock: l.quantity.toNumber(),
+          category: l.category,
+          imageUri: l.imageURI,
+          seller: l.seller,
+          active: l.active,
+          totalSold: l.soldCount.toNumber(),
+          source: 'chain',
         }))
-        const ids = new Set(ps.map(p=>p.id))
-        ps = [...ps, ...(prods||[]).filter(p=>!ids.has(p.id))]
-      } catch { ps = prods||[] }
-    } else ps = prods||[]
+      } catch { ps = prods || [] }
+    } else ps = prods || []
     setDispP(ps)
-  }
-
-  async function resolveSellerMarket(seller, signer, E) {
-    if (!seller || !signer || !E || !SELLER_MARKET_FACTORY_CONTRACT) return ''
-    try {
-      const factory = new E.Contract(SELLER_MARKET_FACTORY_CONTRACT, SELLER_FACTORY_ABI, signer)
-      const existing = await factory.sellerMarket(seller)
-      if (existing && existing !== '0x0000000000000000000000000000000000000000') return existing
-      setGSt({ type:'loading', msg:'Creating seller market from factory...' })
-      const tx = await factory.createSellerMarket()
-      setGSt({ type:'loading', msg:'Creating seller market TX: '+short(tx.hash,8) })
-      const rc = await tx.wait()
-      const ev = rc.events?.find(e => e.event === 'SellerMarketCreated')
-      const market = ev?.args?.market || await factory.sellerMarket(seller)
-      if (market && market !== '0x0000000000000000000000000000000000000000') {
-        localStorage.setItem('arcade_contract_'+seller.toLowerCase(), market)
-        await registerSellerContract(seller, market)
-        return market
-      }
-    } catch (err) {
-      toast$('Factory setup failed: '+(err.reason||err.message||'unknown error'), 'error')
-    }
-    return ''
-  }
-
-  async function registerSellerContract(seller, contractAddress) {
-    if (!seller || !contractAddress) return
-    try {
-      await fetch(MARKET_API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ address: seller, contractAddress }),
-      })
-    } catch {}
   }
 
   async function saveContract() {
     const v = cInput.trim()
     if (!v||!v.startsWith('0x')||v.length!==42) { toast$('Enter a valid 0x address (42 chars)', 'error'); return }
-    const key = 'arcade_contract_'+(ws.address||'').toLowerCase()
-    localStorage.setItem(key, v)
     const E = eLib.current; let ct = null
     if (ws.signer&&E) { try { ct = new E.Contract(v, ARCADE_ABI, ws.signer) } catch {} }
     setWs(w => ({ ...w, contractAddr:v, contract:ct }))
-    if (ws.address) await registerSellerContract(ws.address, v)
-    toast$('Contract address saved and registered for marketplace!', 'success')
+    toast$('Contract address saved!', 'success')
     if (ct&&ws.address&&E) { await doStats(ct, ws.address, localP, E); await doProds(ct, ws.address, localP, E); await doOrders(ct, ws.address, E) }
   }
 
@@ -272,18 +238,18 @@ export function useDashboard() {
     const E = eLib.current
     setListLoad(true); setListTx('Preparing...')
     const pu = E.utils.parseUnits(price.toFixed(6), 6)
+    // arg order: name, description, price, quantity, imageURI, category
+    const listArgs = [pf.name.trim(), pf.desc.trim(), pu, stock, pf.imgUri, pf.cat]
     const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
     try {
-      setListTx('Estimating medium gas from seller wallet...')
-      const listArgs = [pf.name.trim(), pf.desc.trim(), pu, stock, pf.cat, pf.imgUri]
-      const { listFn, txOverrides } = await resolveListCall(ct, p, listArgs)
+      setListTx('Estimating gas...')
+      const txOverrides = await getMediumGasOverrides(ct, p, 'createListing', listArgs)
       setListTx('Waiting for MetaMask...')
-      const tx = await ct[listFn](...listArgs, txOverrides)
+      const tx = await ct.createListing(...listArgs, { ...txOverrides, gasLimit: 500000n })
       setListTx('TX: '+short(tx.hash,8))
       setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
       const rc = await tx.wait(); prod.txHash=tx.hash
-      const ev = rc.events?.find(e=>e.event==='ProductListed'||e.event==='ProductCreated'); if (ev) prod.id=ev.args.productId.toNumber()
-      if (a && ca) await registerSellerContract(a, ca)
+      const ev = rc.events?.find(e=>e.event==='ListingCreated'); if (ev) prod.id=ev.args.id.toNumber()
       setListTx('Listed on Arc Testnet!')
       setTxMod(m => ({ ...m, icon:'✅', title:'Listing Confirmed!', desc:`"${pf.name}" is now live on Arcade Market.` }))
       toast$(`"${pf.name}" listed!`, 'success')
@@ -304,7 +270,7 @@ export function useDashboard() {
     if (!confirm('Delist this product?')) return
     if (ct) {
       try {
-        const tx = await ct.delistProduct(id)
+        const tx = await ct.delistItem(id)
         toast$('Delisting... TX: '+short(tx.hash,8), 'info')
         await tx.wait(); toast$('Delisted!', 'success')
       } catch(e) { toast$('Delist failed: '+(e.reason||e.message), 'error'); return }
@@ -345,11 +311,6 @@ export function useDashboard() {
       setListTx('')
       toast$(err.message || 'Image upload failed', 'error')
     }
-  }
-
-  async function resolveListCall(ct, p, args) {
-    const txOverrides = await getMediumGasOverrides(ct, p, 'listProduct', args)
-    return { listFn:'listProduct', txOverrides }
   }
 
   async function getMediumGasOverrides(ct, p, fnName, args) {
