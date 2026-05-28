@@ -352,11 +352,6 @@ export function useDashboard() {
   }
 
   async function resolveListCall(ct, p, args) {
-    try {
-      const txOverrides = await getMediumGasOverrides(ct, p, 'createProduct', args)
-      return { listFn:'createProduct', txOverrides }
-    } catch {}
-
     const txOverrides = await getMediumGasOverrides(ct, p, 'listProduct', args)
     return { listFn:'listProduct', txOverrides }
   }

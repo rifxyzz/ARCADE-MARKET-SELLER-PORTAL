@@ -19,7 +19,7 @@ export default function GateScreen({ gateOpen, gLoad, gSt, connect }) {
           <div className="gate-req-icon">🃏</div>
           <div>
             <div className="gate-req-title">Genesis NFT Required</div>
-            <div className="gate-req-desc">Hold ≥ 1 ARCM Genesis NFT to unlock seller access · USDC payments on Arc Testnet</div>
+            <div className="gate-req-desc">Hold ≥ 1 ARCM Early Genesis NFT to unlock seller access · USDC payments on Arc Testnet</div>
           </div>
         </div>
         <button className="gate-connect-btn" disabled={gLoad} onClick={() => connect(false)}>

@@ -76,11 +76,11 @@ export default function AddProductTab({ pf, setPf, listLoad, listTx, listProduct
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: 12, background: 'rgba(48,224,0,0.05)', border: '1px solid rgba(48,224,0,0.15)', borderRadius: 10, marginBottom: 14 }}>
                 <span style={{ fontSize: 18 }}>✅</span>
                 <div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)' }}>Genesis Verified</div>
-                  <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: "'DM Mono',monospace" }}>{ws.nftBalance} ARCM · {tierName}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: 'var(--green)' }}>Early Genesis Verified</div>
+                  <div style={{ fontSize: 11, color: 'var(--text2)', fontFamily: "'DM Mono',monospace" }}>{ws.nftBalance} ARCM Early Genesis · {tierName}</div>
                 </div>
               </div>
-              <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>Your Genesis NFT grants seller access. Listings go live on Arcade Market instantly.</div>
+              <div style={{ fontSize: 12, color: 'var(--text2)', lineHeight: 1.6 }}>Your ARCM Early Genesis NFT grants seller access. Listings go live on Arcade Market instantly.</div>
             </div>
           </div>
 
