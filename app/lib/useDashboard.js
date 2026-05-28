@@ -175,19 +175,15 @@ export function useDashboard() {
   async function doOrders(ct, a, E) {
     if (!a || !ct || !E) { setOrders([]); return }
     try {
-      const legacyFilter = ct.filters['ProductPurchased(uint256,address,address,uint256,uint256)'](null, null, a)
-      const factoryFilter = ct.filters['ProductPurchased(uint256,address,address,uint256,uint256,uint256)'](null, null, a)
-      const logs = [
-        ...(await ct.queryFilter(legacyFilter, 0, 'latest')),
-        ...(await ct.queryFilter(factoryFilter, 0, 'latest')),
-      ].sort((aLog, bLog) => aLog.blockNumber - bLog.blockNumber || aLog.logIndex - bLog.logIndex)
+      const filter = ct.filters['ProductPurchased(uint256,address,address,uint256,uint256)'](null, null, a)
+      const logs = (await ct.queryFilter(filter, 0, 'latest'))
+        .sort((aLog, bLog) => aLog.blockNumber - bLog.blockNumber || aLog.logIndex - bLog.logIndex)
       const mapped = logs.map(ev => {
-        const amount = ev.args.amount || ev.args.totalPrice
         return {
           productId: ev.args.productId.toNumber(),
           buyer: ev.args.buyer,
           seller: ev.args.seller,
-          amount: parseFloat(E.utils.formatUnits(amount, 6)),
+          amount: parseFloat(E.utils.formatUnits(ev.args.amount, 6)),
           quantity: ev.args.quantity.toNumber(),
           txHash: ev.transactionHash,
         }
@@ -308,7 +304,7 @@ export function useDashboard() {
     if (!confirm('Delist this product?')) return
     if (ct) {
       try {
-        const tx = ct.setProductActive ? await ct.setProductActive(id, false) : await ct.delistProduct(id)
+        const tx = await ct.delistProduct(id)
         toast$('Delisting... TX: '+short(tx.hash,8), 'info')
         await tx.wait(); toast$('Delisted!', 'success')
       } catch(e) { toast$('Delist failed: '+(e.reason||e.message), 'error'); return }
@@ -357,9 +353,16 @@ export function useDashboard() {
   }
 
   async function getMediumGasOverrides(ct, p, fnName, args) {
-    if (!ct.estimateGas?.[fnName]) throw new Error(`${fnName} is not supported by this contract`)
-    const gasLimit = await ct.estimateGas[fnName](...args)
-    const bufferedGasLimit = gasLimit.mul(130).div(100)
+    const E = eLib.current
+    let bufferedGasLimit
+    try {
+      if (!ct.estimateGas?.[fnName]) throw new Error('no estimateGas')
+      const gasLimit = await ct.estimateGas[fnName](...args)
+      bufferedGasLimit = gasLimit.mul(130).div(100)
+    } catch {
+      // estimation failed (e.g. NFT gate revert in simulation) — use a safe fixed limit
+      bufferedGasLimit = E.BigNumber.from(500000)
+    }
 
     try {
       const fee = await p.getFeeData()
