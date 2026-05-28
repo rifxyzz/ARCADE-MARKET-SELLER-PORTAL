@@ -243,9 +243,9 @@ export function useDashboard() {
     const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, seller:a, active:true, totalSold:0, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
     try {
       setListTx('Estimating gas...')
-      const txOverrides = await getMediumGasOverrides(ct, p, 'listProduct', listArgs)
+      const gasEstimate = await ct.estimateGas.listProduct(...listArgs)
       setListTx('Waiting for MetaMask...')
-      const tx = await ct.listProduct(...listArgs, { ...txOverrides, gasLimit: 500000n })
+      const tx = await ct.listProduct(...listArgs, { gasLimit: gasEstimate.mul(120).div(100) })
       setListTx('TX: '+short(tx.hash,8))
       setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
       const rc = await tx.wait(); prod.txHash=tx.hash
