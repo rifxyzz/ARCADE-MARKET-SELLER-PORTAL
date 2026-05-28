@@ -220,19 +220,8 @@ export function useDashboard() {
     const listArgs = [pf.name.trim(), pf.desc.trim(), pu, stock, pf.imgUri, pf.cat]
     const prod = { id:Date.now(), name:pf.name.trim(), description:pf.desc.trim(), priceUsdc:price, stock, category:pf.cat, imageUri:pf.imgUri, active:true, txHash:null, listedAt:new Date().toISOString(), source:'chain' }
     try {
-      let gasLimit
-      try {
-        const estimated = await ct.estimateGas.listProduct(...listArgs)
-        console.log('estimated gas:', estimated.toString())
-        const withBuffer = estimated.mul(150).div(100)
-        const cap = E.BigNumber.from(1_000_000)
-        gasLimit = withBuffer.gt(cap) ? cap : withBuffer
-      } catch(gasErr) {
-        console.warn('estimateGas failed, using fallback:', gasErr.message)
-        gasLimit = 300000
-      }
       setListTx('Waiting for MetaMask...')
-      const tx = await ct.listProduct(...listArgs, { gasLimit })
+      const tx = await ct.listProduct(...listArgs)
       setListTx('TX: '+short(tx.hash,8))
       setTxMod({ show:true, icon:'⬡', title:'Listing Submitted', desc:`"${pf.name}" is being listed...`, hash:tx.hash })
       const rc = await tx.wait(); prod.txHash=tx.hash

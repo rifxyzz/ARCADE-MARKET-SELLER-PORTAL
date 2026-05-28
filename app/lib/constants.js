@@ -1,6 +1,6 @@
 export const ARC_TESTNET = {
   chainId: 5042002, chainIdHex: '0x4cef52', name: 'Arc Testnet',
-  rpcUrl: process.env.NEXT_PUBLIC_ARC_TESTNET_RPC_URL || 'https://rpc.testnet.arc.network',
+  rpcUrl: process.env.NEXT_PUBLIC_ARC_TESTNET_RPC_URL || 'https://arc-testnet.drpc.org',
   explorerUrl: 'https://testnet.arcscan.app',
   explorerTx: 'https://testnet.arcscan.app/tx/',
   nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
